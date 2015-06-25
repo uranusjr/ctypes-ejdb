@@ -78,7 +78,10 @@ def _bson_encode_element(key, value, into):
             r = c.bson_append_int(into, key, value)
     elif isinstance(value, float):
         r = c.bson_append_double(into, key, value)
-    elif isinstance(value, (datetime.date, datetime.datetime,)):
+    elif isinstance(value, datetime.datetime):
+        millis = _datetime_to_millis(value)
+        r = c.bson_append_date(into, key, millis)
+    elif isinstance(value, datetime.date):
         value = datetime.datetime.combine(value, datetime.datetime.min.time())
         millis = _datetime_to_millis(value)
         r = c.bson_append_date(into, key, millis)
