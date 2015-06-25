@@ -378,6 +378,8 @@ class Collection(object):
             document exists.
         """
         # TODO: Document hints, implement MongoDB-like hinting kwargs.
+        # TODO: Add a flag to choose whether we should raise
+        # DocumentDoesNotExist or return None with an empty result.
         tclist_p, count = self._find(queries, kwargs, c.JBQRYFINDONE)
         cursor = Cursor(wrapped=tclist_p, count=count)
         try:
@@ -671,8 +673,23 @@ class Database(CObjectWrapper):
 
         is semantically identical to::
 
-            collection = db['people']
+            collection = db.create_collection('people', exists_ok=True)
             collection.find({'name': 'TP'})
         """
-        coll = self.get_collection(collection_name)
+        coll = self.create_collection(collection_name, exists_ok=True)
         return coll.find(*args, **kwargs)
+
+    def find_one(self, collection_name, *args, **kwargs):
+        """Shortcut to query a collection in the database.
+
+        The following usage::
+
+            db.find_one('people', {'name': 'TP'})
+
+        is semantically identical to::
+
+            collection = db.create_collection('people', exists_ok=True)
+            collection.find_one({'name': 'TP'})
+        """
+        coll = self.create_collection(collection_name, exists_ok=True)
+        return coll.find_one(*args, **kwargs)
