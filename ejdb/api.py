@@ -340,9 +340,11 @@ class Collection(object):
         return tclist_p, count.value
 
     def count(self, *queries, **kwargs):
-        """Get the number of documents in this collection.
+        """count(*queries, hints={})
 
-        :param hints: (Optional) A mapping of possible hints to the selection.
+        Get the number of documents in this collection.
+
+        :param hints: A mapping of possible hints to the selection.
         """
         # TODO: Document hints, implement MongoDB-like hinting kwargs.
         tclist_p, count = self._find(queries, kwargs, flags=c.JBQRYCOUNT)
@@ -350,9 +352,11 @@ class Collection(object):
         return count
 
     def find_one(self, *queries, **kwargs):
-        """Find a single document in the collection.
+        """find_one(*queries, hints={})
 
-        :param hints: (Optional) A mapping of possible hints to the selection.
+        Find a single document in the collection.
+
+        :param hints: A mapping of possible hints to the selection.
         :returns: A mapping for the document found, or `None` if no matching
             document exists.
         """
@@ -369,9 +373,11 @@ class Collection(object):
         return document
 
     def find(self, *queries, **kwargs):
-        """Find documents in the collection.
+        """find(*queries, hints={})
 
-        :param hints: (Optional) A mapping of possible hints to the selection.
+        Find documents in the collection.
+
+        :param hints: A mapping of possible hints to the selection.
         :returns: A :class:`Cursor` instance corresponding to this query.
         """
         # TODO: Document hints, implement MongoDB-like hinting kwargs.
@@ -380,13 +386,15 @@ class Collection(object):
         return Cursor(wrapped=tclist_p, count=count)
 
     def delete_one(self, *queries, **kwargs):
-        """Delete a single document in the collection.
+        """delete_one(*queries, hints={})
+
+        Delete a single document in the collection.
 
         This is an optimized shortcut for `find_one({..., '$dropall': True})`.
         Use the formal syntax if you want to get the deleted document's
         content.
 
-        :param hints: (Optional) A mapping of possible hints to the selection.
+        :param hints: A mapping of possible hints to the selection.
         :returns: A boolean specifying whether a document is deleted.
         """
         hints = kwargs.pop('hints', {})
@@ -396,13 +404,15 @@ class Collection(object):
         return bool(count)
 
     def delete_many(self, *queries, **kwargs):
-        """Delete documents in the collection.
+        """delete_many(*queries, hints={})
+
+        Delete documents in the collection.
 
         This is an optimized shortcut for `find({..., '$dropall': True})`.
         Use the formal syntax if you want to get the content of deleted
         documents.
 
-        :param hints: (Optional) A mapping of possible hints to the selection.
+        :param hints: A mapping of possible hints to the selection.
         :returns: A boolean specifying whether a document is deleted.
         """
         hints = kwargs.pop('hints', {})
@@ -410,7 +420,9 @@ class Collection(object):
         return count
 
     def save(self, *documents, **kwargs):
-        """Persist one or more documents in the collection.
+        """save(*documents, merge=False)
+
+        Persist one or more documents in the collection.
 
         If a saved document doesn't have a `_id` key, an automatically
         generated unused OID will be used. Otherwise the OID is set to the
@@ -419,9 +431,8 @@ class Collection(object):
 
         This method is provided for compatibility with `ejdb-python`.
 
-        :param merge: (Optional) If evalutes to `True`, content of existing
-            document with matching `_id` will be merged with the provided
-            document's content. Default is `False`.
+        :param merge: If evalutes to `True`, content of existing document with
+            matching `_id` will be merged with the provided document's content.
         """
         merge = kwargs.pop('merge', False)
         with self.begin_transaction():
@@ -444,6 +455,12 @@ class Collection(object):
         _set_index(self, 'add', path, index_type)
 
     def remove_index(self, path, index_type=None):
+        """Remove index(es) on `path` from the collection.
+
+        The index of specified type on `path`, if given by `index_type`, will
+        be removed. If `index_type` is `None`, all indexes on `path` will be
+        removed.
+        """
         if index_type is None:
             ok = c.ejdbsetindex(
                 self._wrapped, coerce_char_p(path), c.JBIDXDROPALL,
