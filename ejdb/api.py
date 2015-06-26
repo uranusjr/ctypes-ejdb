@@ -15,9 +15,9 @@ __all__ = [
     'DatabaseError', 'CollectionDoesNotExist', 'TransactionError',
     'OperationError',
     'READ', 'WRITE', 'CREATE', 'TRUNCATE', 'NOLOCK', 'SYNC',
-    'Index', 'STRING', 'ISTRING', 'NUMBER', 'ARRAY',
+    'STRING', 'ISTRING', 'NUMBER', 'ARRAY',
     'get_ejdb_version', 'is_valid_oid',
-    'Cursor', 'Transaction', 'Collection', 'CollectionIterator', 'Database',
+    'Collection', 'Database',
 ]
 
 
@@ -576,6 +576,8 @@ class Database(CObjectWrapper):
     :func:`open` later.
     """
     def __init__(self, path='', options=READ):
+        """__init__(path='', options=READ)
+        """
         super(Database, self).__init__(
             wrapped=c.ejdbnew(), finalizer=_ejdb_finalizer,
         )
@@ -680,31 +682,29 @@ class Database(CObjectWrapper):
             raise DatabaseError(_get_errmsg(self.database))
 
     def is_open(self):
-        """Whether this EJDB is currently open.
+        """Check whether this EJDB is currently open.
         """
         open_state = c.ejdbisopen(self._wrapped)
         return open_state
 
-    def create_collection(self, name, options=None, exist_ok=False):
+    def create_collection(self, name, exist_ok=False, **options):
         """Create a collection in this database with given options.
 
-        The newly-created collection is returned. Raises an exception if a
-        If `exist_ok` is `True`, existing collection with the same name will
-        be returned, otherwise an error will be raised.
-
-        `options` should be a mapping with four possible keys:
-
-        * large         If `True`, the collection can be larger than 2 GB.
-                        Default is `False`.
-        * compressed    If `True`, the collection will be compressed with
-                        DEFLATE compression. Default is `False`.
-        * records       Expected records number in the collection.
-                        Default is `128000`.
-        * cachedrecords Maximum number of records cached in memory.
-                        Default is `0`.
+        The newly-created collection is returned. If `exist_ok` is `True`,
+        existing collection with the same name will be returned, otherwise an
+        error will be raised.
 
         Options only apply to newly-created collection. Existing collections
-        will not be affected.
+        will not be affected. Possible options include:
+
+        :param large: If `True`, the collection can be larger than 2 GB.
+            Default is `False`.
+        :param compressed: If `True`, the collection will be compressed with
+            DEFLATE compression. Default is `False`.
+        :param records: Expected records number in the collection. Default is
+            `128000`.
+        :param cachedrecords: Maximum number of records cached in memory.
+            Default is `0`.
         """
         c_name = coerce_char_p(name)
         if not exist_ok and c.ejdbgetcoll(self._wrapped, c_name):
@@ -751,7 +751,9 @@ class Database(CObjectWrapper):
         return bool(c.ejdbgetcoll(self._wrapped, c_name))
 
     def find(self, collection_name, *args, **kwargs):
-        """Shortcut to query a collection in the database.
+        """find(collection_name, *queries, hints={})
+
+        Shortcut to query a collection in the database.
 
         The following usage::
 
@@ -766,7 +768,9 @@ class Database(CObjectWrapper):
         return coll.find(*args, **kwargs)
 
     def find_one(self, collection_name, *args, **kwargs):
-        """Shortcut to query a collection in the database.
+        """find_one(collection_name, *queries, hints={})
+
+        Shortcut to query a collection in the database.
 
         The following usage::
 
