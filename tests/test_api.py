@@ -187,7 +187,7 @@ class TestDatabase(object):
             self.jb.create_collection('yksom')
         assert str(ctx.value) == "Collection with name 'yksom' already exists."
 
-        self.jb.create_collection('yksom', exists_ok=True)
+        self.jb.create_collection('yksom', exist_ok=True)
 
     def test_has_collection(self):
         assert self.jb.has_collection('yksom') is False

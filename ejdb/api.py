@@ -648,11 +648,11 @@ class Database(CObjectWrapper):
         open_state = c.ejdbisopen(self._wrapped)
         return open_state
 
-    def create_collection(self, name, options=None, exists_ok=False):
+    def create_collection(self, name, options=None, exist_ok=False):
         """Create a collection in this database with given options.
 
         The newly-created collection is returned. Raises an exception if a
-        If `exists_ok` is `True`, existing collection with the same name will
+        If `exist_ok` is `True`, existing collection with the same name will
         be returned, otherwise an error will be raised.
 
         `options` should be a mapping with four possible keys:
@@ -670,7 +670,7 @@ class Database(CObjectWrapper):
         will not be affected.
         """
         c_name = coerce_char_p(name)
-        if not exists_ok and c.ejdbgetcoll(self._wrapped, c_name):
+        if not exist_ok and c.ejdbgetcoll(self._wrapped, c_name):
             raise DatabaseError(
                 "Collection with name '{name}' already exists.".format(
                     name=name,
@@ -722,10 +722,10 @@ class Database(CObjectWrapper):
 
         is semantically identical to::
 
-            collection = db.create_collection('people', exists_ok=True)
+            collection = db.create_collection('people', exist_ok=True)
             collection.find({'name': 'TP'})
         """
-        coll = self.create_collection(collection_name, exists_ok=True)
+        coll = self.create_collection(collection_name, exist_ok=True)
         return coll.find(*args, **kwargs)
 
     def find_one(self, collection_name, *args, **kwargs):
@@ -737,8 +737,8 @@ class Database(CObjectWrapper):
 
         is semantically identical to::
 
-            collection = db.create_collection('people', exists_ok=True)
+            collection = db.create_collection('people', exist_ok=True)
             collection.find_one({'name': 'TP'})
         """
-        coll = self.create_collection(collection_name, exists_ok=True)
+        coll = self.create_collection(collection_name, exist_ok=True)
         return coll.find_one(*args, **kwargs)
