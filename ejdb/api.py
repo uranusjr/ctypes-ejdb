@@ -537,6 +537,30 @@ class CollectionIterator(tc.ListIterator):
         )
 
 
+class DatabaseSession(object):
+
+    def __init__(self, db):
+        super(DatabaseSession, self).__init__()
+        self._db = db
+
+        # Open the database immediately, so that direct call on
+        # `Database.open()` works without a `with` block.
+        if db.is_open():
+            raise DatabaseError('Database already opened.')
+
+        path = coerce_char_p(db.path)
+        ok = c.ejdbopen(db._wrapped, path, db.options)
+        if not ok:
+            raise DatabaseError(_get_errmsg(db))
+
+    def __enter__(self):
+        # Don't need to do anything since the session has already begun.
+        pass
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        self._db.close()
+
+
 class Database(CObjectWrapper):
     """Representation of an EJDB.
 
@@ -624,14 +648,27 @@ class Database(CObjectWrapper):
 
     def open(self):
         """Open this EJDB.
-        """
-        if self.is_open():
-            raise DatabaseError('Database already opened.')
 
-        path = coerce_char_p(self.path)
-        ok = c.ejdbopen(self._wrapped, path, self.options)
-        if not ok:
-            raise DatabaseError(_get_errmsg(self))
+        This can be used directly, with the user calling :func:`close` later
+        manually::
+
+            db.open()
+            try:
+                ... # Do things.
+            except:
+                ... # Handle exceptions.
+            finally:
+                db.close()
+
+        Or as a context manager::
+
+            with db.open():
+                ... # Do things.
+
+        In the latter usage, :func:`close` will be called automatically when
+        the block exits.
+        """
+        return DatabaseSession(db=self)
 
     def close(self):
         """Close this EJDB.
