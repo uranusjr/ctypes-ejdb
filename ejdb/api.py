@@ -11,16 +11,6 @@ from . import bson, c, tc
 from .utils import CObjectWrapper, coerce_char_p, coerce_str
 
 
-__all__ = [
-    'DatabaseError', 'CollectionDoesNotExist', 'TransactionError',
-    'OperationError',
-    'READ', 'WRITE', 'CREATE', 'TRUNCATE', 'NOLOCK', 'SYNC',
-    'STRING', 'ISTRING', 'NUMBER', 'ARRAY',
-    'get_ejdb_version', 'is_valid_oid',
-    'Collection', 'Database',
-]
-
-
 class DatabaseError(Exception):
     pass
 

@@ -5,8 +5,6 @@ import weakref
 
 import six
 
-__all__ = ['coerce_char_p', 'coerce_str', 'CObjectWrapper']
-
 
 # Keeps a reference to all wrapper instances so that we can dealloc them when
 # we need to.
