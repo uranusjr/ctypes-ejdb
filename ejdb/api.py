@@ -310,6 +310,105 @@ class Collection(object):
             ids = [str(self._insert(document)) for document in documents]
         return ids
 
+    def _execute(self, queries, hints, flags):
+        if queries:
+            query = queries[0]
+            queries = queries[1:]
+        else:
+            query = {}
+        query_bs = bson.encode(query, as_query=True)
+        hints = bson.encode(hints, as_query=True)
+
+        extra_query_count = len(queries)
+        if extra_query_count:
+            BSONREF_ARR = c.BSONREF * extra_query_count
+            extra_query_bs_array = BSONREF_ARR(*(
+                bson.encode(obj, as_query=True)._wrapped for obj in queries
+            ))
+        else:
+            extra_query_bs_array = c.BSONREF(0)
+
+        ejq = c.ejdbcreatequery(
+            self._database._wrapped, query_bs._wrapped,
+            extra_query_bs_array, extra_query_count, hints._wrapped,
+        )
+        count = ctypes.c_uint32()
+        tclist_p = c.ejdbqryexecute(
+            self._wrapped, ejq, ctypes.byref(count), 0, c.TCXSTRREF(0),
+        )
+        c.ejdbquerydel(ejq)
+        return tclist_p, count.value
+
+    def count(self, *queries, **kwargs):
+        """Get the number of documents in this collection.
+
+        :param hints: (Optional) A mapping of possible hints to the selection.
+        """
+        # TODO: Document hints, implement MongoDB-like hinting kwargs.
+        tclist_p, count = self._find(queries, kwargs, flags=c.JBQRYCOUNT)
+        c.tclistdel(tclist_p)
+        return count
+
+    def find_one(self, *queries, **kwargs):
+        """Find a single document in the collection.
+
+        :param hints: (Optional) A mapping of possible hints to the selection.
+        :returns: A mapping for the document found, or `None` if no matching
+            document exists.
+        """
+        # TODO: Document hints, implement MongoDB-like hinting kwargs.
+        # TODO: Add a flag to choose whether we should raise
+        # DocumentDoesNotExist or return None with an empty result.
+        hints = kwargs.pop('hints', {})
+        tclist_p, count = self._execute(queries, hints, flags=c.JBQRYFINDONE)
+        cursor = Cursor(wrapped=tclist_p, count=count)
+        try:
+            document = cursor[0]
+        except IndexError:
+            document = None
+        return document
+
+    def find(self, *queries, **kwargs):
+        """Find documents in the collection.
+
+        :param hints: (Optional) A mapping of possible hints to the selection.
+        :returns: A :class:`Cursor` instance corresponding to this query.
+        """
+        # TODO: Document hints, implement MongoDB-like hinting kwargs.
+        hints = kwargs.pop('hints', {})
+        tclist_p, count = self._execute(queries, hints, flags=0)
+        return Cursor(wrapped=tclist_p, count=count)
+
+    def delete_one(self, *queries, **kwargs):
+        """Delete a single document in the collection.
+
+        This is an optimized shortcut for `find_one({..., '$dropall': True})`.
+        Use the formal syntax if you want to get the deleted document's
+        content.
+
+        :param hints: (Optional) A mapping of possible hints to the selection.
+        :returns: A boolean specifying whether a document is deleted.
+        """
+        hints = kwargs.pop('hints', {})
+        tclist_p, count = self._execute(
+            queries, hints, flags=(c.JBQRYFINDONE | c.JBQRYCOUNT),
+        )
+        return bool(count)
+
+    def delete_many(self, *queries, **kwargs):
+        """Delete documents in the collection.
+
+        This is an optimized shortcut for `find({..., '$dropall': True})`.
+        Use the formal syntax if you want to get the content of deleted
+        documents.
+
+        :param hints: (Optional) A mapping of possible hints to the selection.
+        :returns: A boolean specifying whether a document is deleted.
+        """
+        hints = kwargs.pop('hints', {})
+        tclist_p, count = self._execute(queries, hints, flags=c.JBQRYCOUNT)
+        return count
+
     def save(self, *documents, **kwargs):
         """Persist one or more documents in the collection.
 
@@ -340,73 +439,6 @@ class Collection(object):
             raise ValueError('OID should be a 24-character-long hex string.')
         oid = c.BSONOID.from_string(oid)
         self._remove(oid)
-
-    def _find(self, queries, kwargs, flags):
-        if queries:
-            query = queries[0]
-            queries = queries[1:]
-        else:
-            query = {}
-        query_bs = bson.encode(query, as_query=True)
-        hints = bson.encode(kwargs.pop('hints', {}), as_query=True)
-
-        extra_query_count = len(queries)
-        if extra_query_count:
-            BSONREF_ARR = c.BSONREF * extra_query_count
-            extra_query_bs_array = BSONREF_ARR(*(
-                bson.encode(obj, as_query=True)._wrapped for obj in queries
-            ))
-        else:
-            extra_query_bs_array = c.BSONREF(0)
-
-        ejq = c.ejdbcreatequery(
-            self._database._wrapped, query_bs._wrapped,
-            extra_query_bs_array, extra_query_count, hints._wrapped,
-        )
-        count = ctypes.c_uint32()
-        tclist_p = c.ejdbqryexecute(
-            self._wrapped, ejq, ctypes.byref(count), 0, c.TCXSTRREF(0),
-        )
-        c.ejdbquerydel(ejq)
-        return tclist_p, count.value
-
-    def find_one(self, *queries, **kwargs):
-        """Find documents in the collection.
-
-        :param hints: (Optional) A mapping of possible hints to the selection.
-        :returns: A mapping for the document found, or `None` if no matching
-            document exists.
-        """
-        # TODO: Document hints, implement MongoDB-like hinting kwargs.
-        # TODO: Add a flag to choose whether we should raise
-        # DocumentDoesNotExist or return None with an empty result.
-        tclist_p, count = self._find(queries, kwargs, c.JBQRYFINDONE)
-        cursor = Cursor(wrapped=tclist_p, count=count)
-        try:
-            document = cursor[0]
-        except IndexError:
-            document = None
-        return document
-
-    def find(self, *queries, **kwargs):
-        """Find documents in the collection.
-
-        :param hints: (Optional) A mapping of possible hints to the selection.
-        :returns: A :class:`Cursor` instance corresponding to this query.
-        """
-        # TODO: Document hints, implement MongoDB-like hinting kwargs.
-        tclist_p, count = self._find(queries, kwargs, 0)
-        return Cursor(wrapped=tclist_p, count=count)
-
-    def count(self, *queries, **kwargs):
-        """Get the number of documents in this collection.
-
-        :param hints: (Optional) A mapping of possible hints to the selection.
-        """
-        # TODO: Document hints, implement MongoDB-like hinting kwargs.
-        tclist_p, count = self._find(queries, kwargs, c.JBQRYCOUNT)
-        c.tclistdel(tclist_p)
-        return count
 
     def create_index(self, path, index_type):
         _set_index(self, 'add', path, index_type)
