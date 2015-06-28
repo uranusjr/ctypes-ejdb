@@ -41,7 +41,8 @@ import ejdb
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
 extensions = [
     'sphinx.ext.autodoc',
-    'sphinx.ext.intersphinx',
+    # 'sphinx.ext.intersphinx',
+    'sphinx.ext.todo',
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -108,9 +109,18 @@ pygments_style = 'sphinx'
 # documents.
 # keep_warnings = False
 
+
+# -- Options for plugins -----------------------------------------------
+
+autoclass_content = 'both'
+
+autodoc_member_order = 'groupwise'
+
 intersphinx_mapping = {
     'python': ('https://docs.python.org/3.4', None,),
 }
+
+todo_include_todos = True
 
 
 # -- Options for HTML output -------------------------------------------
@@ -279,7 +289,3 @@ texinfo_documents = [
 
 # If true, do not generate a @detailmenu in the "Top" node's menu.
 # texinfo_no_detailmenu = False
-
-autoclass_content = 'both'
-
-autodoc_member_order = 'groupwise'

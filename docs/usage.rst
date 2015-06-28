@@ -18,3 +18,7 @@ Getting a Database
 ------------------
 
 When working with ctypes-ejdb, the first step is to create a :class:`Database` instance to a new or existing database file.
+
+.. todo::
+
+    * Finish this tutorial.
