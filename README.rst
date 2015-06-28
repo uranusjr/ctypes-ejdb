@@ -12,7 +12,7 @@ ctypes-ejdb
         :target: https://pypi.python.org/pypi/ctypes-ejdb
 
 
-Python binding for EJDB built upon ctypes.
+Python binding for EJDB built on ctypes.
 
 * Free software: BSD license.
 * Documentation: https://ctypes-ejdb.readthedocs.org.

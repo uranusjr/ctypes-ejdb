@@ -37,7 +37,7 @@ test_requirements = [
 setup(
     name='ctypes-ejdb',
     version=get_version(),
-    description='Python binding for EJDB built upon ctypes.',
+    description='Python binding for EJDB built on ctypes.',
     long_description=readme + '\n\n' + history,
     author='Tzu-ping Chung',
     author_email='uranusjr@gmail.com',
