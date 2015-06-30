@@ -297,7 +297,10 @@ class Collection(object):
         :returns: A list of OIDs of the inserted documents.
         """
         with self.begin_transaction():
-            ids = [str(self._insert(document)) for document in documents]
+            ids = [
+                six.text_type(self._insert(document))
+                for document in documents
+            ]
         return ids
 
     def _execute(self, queries, hints, flags):

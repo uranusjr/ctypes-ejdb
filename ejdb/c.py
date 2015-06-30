@@ -194,7 +194,7 @@ class BSONOID(ctypes.Union):
     ]
 
     def __str__(self):
-        buf = ctypes.create_string_buffer(24)
+        buf = ctypes.create_string_buffer(25)
         bson_oid_to_string(ctypes.byref(self), buf)
         s = buf.value.decode('ascii')   # ASCII is enough since OID is hex.
         return s
