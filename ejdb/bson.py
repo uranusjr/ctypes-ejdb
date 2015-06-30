@@ -58,59 +58,59 @@ def _datetime_to_millis(value):
 def _bson_encode_element(key, value, into):
     key = coerce_char_p(key)
     if value is None:
-        r = c.bson_append_null(into, key)
+        r = c.bson.append_null(into, key)
     elif isinstance(value, six.text_type):
         value = coerce_char_p(value)
         if key == ID_KEY_NAME:
             oid = c.BSONOID.from_string(value)
-            r = c.bson_append_oid(into, key, ctypes.byref(oid))
+            r = c.bson.append_oid(into, key, ctypes.byref(oid))
         else:
-            r = c.bson_append_string_n(into, key, value, len(value))
+            r = c.bson.append_string_n(into, key, value, len(value))
     elif isinstance(value, bool):
-        r = c.bson_append_bool(into, key, value)
+        r = c.bson.append_bool(into, key, value)
     elif isinstance(value, six.integer_types):
         # Need to be after bool because bool is a subclass of int.
         if value > LONG_MAX:
             raise BSONEncodeError(value)
         elif value > INT_MAX:
-            r = c.bson_append_long(into, key, value)
+            r = c.bson.append_long(into, key, value)
         else:
-            r = c.bson_append_int(into, key, value)
+            r = c.bson.append_int(into, key, value)
     elif isinstance(value, float):
-        r = c.bson_append_double(into, key, value)
+        r = c.bson.append_double(into, key, value)
     elif isinstance(value, datetime.datetime):
         millis = _datetime_to_millis(value)
-        r = c.bson_append_date(into, key, millis)
+        r = c.bson.append_date(into, key, millis)
     elif isinstance(value, datetime.date):
         value = datetime.datetime.combine(value, datetime.datetime.min.time())
         millis = _datetime_to_millis(value)
-        r = c.bson_append_date(into, key, millis)
+        r = c.bson.append_date(into, key, millis)
     elif isinstance(value, uuid.UUID):
         data = value.bytes
-        r = c.bson_append_binary(into, key, c.BSON_BIN_UUID, data, len(data))
+        r = c.bson.append_binary(into, key, c.BSON_BIN_UUID, data, len(data))
     elif isinstance(value, (HASH, MD5,)):
         data = value.digest()
-        r = c.bson_append_binary(into, key, c.BSON_BIN_MD5, data, len(data))
+        r = c.bson.append_binary(into, key, c.BSON_BIN_MD5, data, len(data))
     elif isinstance(value, six.binary_type):
         # Need to be after MD5 because MD5 is a subclass of six.binary_type.
         buf = ctypes.create_string_buffer(value, len(value))
-        r = c.bson_append_binary(into, key, c.BSON_BIN_BINARY, buf, len(value))
+        r = c.bson.append_binary(into, key, c.BSON_BIN_BINARY, buf, len(value))
     elif isinstance(value, collections.Mapping):
-        r = c.bson_append_start_object(into, key)
+        r = c.bson.append_start_object(into, key)
         if r != c.BSON_OK:  # pragma: no cover.
             raise BSONEncodeError(value)
         for k in value:
             _bson_encode_element(k, value[k], into)
-        r = c.bson_append_finish_object(into)
+        r = c.bson.append_finish_object(into)
         if r != c.BSON_OK:  # pragma: no cover.
             raise BSONEncodeError(value)
     elif isinstance(value, collections.Sequence):
-        r = c.bson_append_start_array(into, key)
+        r = c.bson.append_start_array(into, key)
         if r != c.BSON_OK:  # pragma: no cover.
             raise BSONEncodeError(value)
         for i, v in enumerate(value):
             _bson_encode_element(str(i), v, into)
-        r = c.bson_append_finish_array(into)
+        r = c.bson.append_finish_array(into)
         if r != c.BSON_OK:  # pragma: no cover.
             raise BSONEncodeError(value)
     else:
@@ -122,73 +122,73 @@ def _bson_encode_element(key, value, into):
 
 
 def _bson_decode_double(bsiter):
-    value = c.bson_iterator_double_raw(bsiter)
+    value = c.bson.iterator_double_raw(bsiter)
     return value
 
 
 def _bson_decode_int(bsiter):
-    value = c.bson_iterator_int_raw(bsiter)
+    value = c.bson.iterator_int_raw(bsiter)
     return value
 
 
 def _bson_decode_long(bsiter):
-    value = c.bson_iterator_long_raw(bsiter)
+    value = c.bson.iterator_long_raw(bsiter)
     return value
 
 
 def _bson_decode_bool(bsiter):
-    value = c.bson_iterator_bool_raw(bsiter)
+    value = c.bson.iterator_bool_raw(bsiter)
     return value
 
 
 def _bson_decode_oid(bsiter):
-    oid_ref = c.bson_iterator_oid(bsiter)
+    oid_ref = c.bson.iterator_oid(bsiter)
     oid_str = six.text_type(oid_ref.contents)
     return oid_str
 
 
 def _bson_decode_string(bsiter):
-    size = c.bson_iterator_string_len(bsiter)
-    data_p = c.bson_iterator_string(bsiter)
+    size = c.bson.iterator_string_len(bsiter)
+    data_p = c.bson.iterator_string(bsiter)
     s = ctypes.string_at(data_p, size - 1)  # Minus NULL character.
     return coerce_str(s)
 
 
 def _bson_decode_date(bsiter):
-    timestamp = c.bson_iterator_date(bsiter)
+    timestamp = c.bson.iterator_date(bsiter)
     dt = datetime.datetime.utcfromtimestamp(timestamp / 1000)
     return dt
 
 
 def _bson_decode_array(bsiter):
-    subiter = c.bson_iterator_create()
-    c.bson_iterator_subiterator(bsiter, subiter)
+    subiter = c.bson.iterator_create()
+    c.bson.iterator_subiterator(bsiter, subiter)
     arr = _bson_decode_array_contents(subiter)
-    c.bson_iterator_dispose(subiter)
+    c.bson.iterator_dispose(subiter)
     return arr
 
 
 def _bson_decode_object(bsiter):
-    subiter = c.bson_iterator_create()
-    c.bson_iterator_subiterator(bsiter, subiter)
+    subiter = c.bson.iterator_create()
+    c.bson.iterator_subiterator(bsiter, subiter)
     obj = _bson_decode_object_contents(subiter)
-    c.bson_iterator_dispose(subiter)
+    c.bson.iterator_dispose(subiter)
     return obj
 
 
 def _bson_decode_binary(bsiter):
-    subtype = c.bson_iterator_bin_type(bsiter)
+    subtype = c.bson.iterator_bin_type(bsiter)
     try:
         subdecoder = _BIN_SUBTYPE_DECODERS[subtype]
     except KeyError:
         raise BSONDecodeError(
             'Could not decode binary with key {key} of type {subtype}'.format(
-                key=coerce_str(c.bson_iterator_key(bsiter)),
+                key=coerce_str(c.bson.iterator_key(bsiter)),
                 subtype=_BIN_SUBTYPE_NAMES[subtype],
             )
         )
-    size = c.bson_iterator_bin_len(bsiter)
-    data_p = c.bson_iterator_bin_data(bsiter)
+    size = c.bson.iterator_bin_len(bsiter)
+    data_p = c.bson.iterator_bin_data(bsiter)
     data = ctypes.string_at(data_p, size=size)
     return subdecoder(data)
 
@@ -257,10 +257,10 @@ _BIN_SUBTYPE_NAMES = [
 def _bson_decode_array_contents(subiter):
     subitems = []
     while True:
-        value_type = c.bson_iterator_next(subiter)
+        value_type = c.bson.iterator_next(subiter)
         if value_type == c.BSON_EOO:
             break
-        key = coerce_str(c.bson_iterator_key(subiter))
+        key = coerce_str(c.bson.iterator_key(subiter))
         try:
             key = int(key)
             assert key == len(subitems)
@@ -284,10 +284,10 @@ def _bson_decode_array_contents(subiter):
 def _bson_decode_object_contents(subiter):
     subitems = collections.OrderedDict()
     while True:
-        value_type = c.bson_iterator_next(subiter)
+        value_type = c.bson.iterator_next(subiter)
         if value_type == c.BSON_EOO:
             break
-        key = coerce_str(c.bson_iterator_key(subiter))
+        key = coerce_str(c.bson.iterator_key(subiter))
         try:
             decoder = _TYPE_DECODERS[value_type]
         except KeyError:
@@ -302,7 +302,7 @@ def _bson_decode_object_contents(subiter):
 
 def _get_data(bs):
     sz = ctypes.c_int()
-    data_p = c.bson_data2(bs._wrapped, ctypes.byref(sz))
+    data_p = c.bson.data2(bs._wrapped, ctypes.byref(sz))
     data = ctypes.string_at(data_p, sz.value)
     return data
 
@@ -317,7 +317,7 @@ class BSON(CObjectWrapper):
         :param managed: Whether the wrapped BSON struct should be deleted on
             object deletion. Defaults to `True`.
         """
-        super(BSON, self).__init__(wrapped=wrapped, finalizer=c.bson_del)
+        super(BSON, self).__init__(wrapped=wrapped, finalizer=c.bson.del_)
 
     @classmethod
     def encode(cls, obj, as_query=False):
@@ -325,21 +325,21 @@ class BSON(CObjectWrapper):
         """
         if not isinstance(obj, collections.Mapping):
             raise BSONEncodeError(obj)
-        wrapped = c.bson_create()
+        wrapped = c.bson.create()
         if as_query:
-            c.bson_init_as_query(wrapped)
+            c.bson.init_as_query(wrapped)
         else:
-            c.bson_init(wrapped)
+            c.bson.init(wrapped)
         for key in obj:
             _bson_encode_element(key=key, value=obj[key], into=wrapped)
-        c.bson_finish(wrapped)
+        c.bson.finish(wrapped)
         return cls(wrapped)
 
     def decode(self):
-        bsiter = c.bson_iterator_create()
-        c.bson_iterator_init(bsiter, self._wrapped)
+        bsiter = c.bson.iterator_create()
+        c.bson.iterator_init(bsiter, self._wrapped)
         obj = _bson_decode_object_contents(bsiter)
-        c.bson_iterator_dispose(bsiter)
+        c.bson.iterator_dispose(bsiter)
         return obj
 
     def __repr__(self):     # pragma: no cover

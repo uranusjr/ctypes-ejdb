@@ -16,7 +16,7 @@ from ejdb import api, c
 
 
 def test_get_ejdb_version():
-    assert api.get_ejdb_version() == c.ejdbversion().decode('utf-8')
+    assert api.get_ejdb_version() == c.ejdb.version().decode('utf-8')
 
 
 def test_is_valid_oid():
@@ -99,10 +99,10 @@ class TestDatabaseInit(object):
         self.path_b = path
 
         # Create an empty database.
-        jb = c.ejdbnew()
-        c.ejdbopen(jb, self.path_b, c.JBOWRITER | c.JBOCREAT)
-        c.ejdbclose(jb)
-        c.ejdbdel(jb)
+        jb = c.ejdb.new()
+        c.ejdb.open(jb, self.path_b, c.JBOWRITER | c.JBOCREAT)
+        c.ejdb.close(jb)
+        c.ejdb.del_(jb)
 
     def teardown(self):
         if self.jb.is_open():
@@ -174,37 +174,37 @@ class TestDatabase(object):
 
     if six.PY2:
         def test_get_collection(self):
-            c.ejdbcreatecoll(self.jb._wrapped, b'yksom', byref(c.EJCOLLOPTS()))
+            c.ejdb.createcoll(self.jb._wrapped, b'yksom', byref(c.EJCOLLOPTS()))
             assert self.jb.get_collection('yksom')
             with pytest.raises(api.CollectionDoesNotExist) as ctx:
                 self.jb.get_collection('yksomevoli')
             assert str(ctx.value) == "u'yksomevoli'"
 
         def test_getitem(self):
-            c.ejdbcreatecoll(self.jb._wrapped, b'yksom', byref(c.EJCOLLOPTS()))
+            c.ejdb.createcoll(self.jb._wrapped, b'yksom', byref(c.EJCOLLOPTS()))
             assert self.jb.get_collection('yksom')
             with pytest.raises(KeyError) as ctx:
                 self.jb['yksomevoli']
             assert str(ctx.value) == "u'yksomevoli'"
     else:
         def test_get_collection(self):
-            c.ejdbcreatecoll(self.jb._wrapped, b'yksom', byref(c.EJCOLLOPTS()))
+            c.ejdb.createcoll(self.jb._wrapped, b'yksom', byref(c.EJCOLLOPTS()))
             assert self.jb.get_collection('yksom')
             with pytest.raises(api.CollectionDoesNotExist) as ctx:
                 self.jb.get_collection('yksomevoli')
             assert str(ctx.value) == "'yksomevoli'"
 
         def test_getitem(self):
-            c.ejdbcreatecoll(self.jb._wrapped, b'yksom', byref(c.EJCOLLOPTS()))
+            c.ejdb.createcoll(self.jb._wrapped, b'yksom', byref(c.EJCOLLOPTS()))
             assert self.jb.get_collection('yksom')
             with pytest.raises(KeyError) as ctx:
                 self.jb['yksomevoli']
             assert str(ctx.value) == "'yksomevoli'"
 
     def test_create_collection(self):
-        assert not c.ejdbgetcoll(self.jb._wrapped, b'yksom')
+        assert not c.ejdb.getcoll(self.jb._wrapped, b'yksom')
         self.jb.create_collection('yksom')
-        assert c.ejdbgetcoll(self.jb._wrapped, b'yksom')
+        assert c.ejdb.getcoll(self.jb._wrapped, b'yksom')
 
         with pytest.raises(api.DatabaseError) as ctx:
             self.jb.create_collection('yksom')

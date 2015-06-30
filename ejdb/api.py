@@ -4,6 +4,7 @@
 from __future__ import absolute_import, unicode_literals
 import collections
 import ctypes
+import functools
 
 import six
 
@@ -65,15 +66,15 @@ ARRAY = Index(c.JBIDXARR, 'array')
 
 
 def _ejdb_finalizer(wrapped):
-    if c.ejdbisopen(wrapped):
-        c.ejdbclose(wrapped)
-    c.ejdbdel(wrapped)
+    if c.ejdb.isopen(wrapped):
+        c.ejdb.close(wrapped)
+    c.ejdb.del_(wrapped)
 
 
 def _set_index(collection, verb, path, index_type, flags=0):
     path_c = coerce_char_p(path)
     flags |= index_type.flags
-    ok = c.ejdbsetindex(collection._wrapped, path_c, flags)
+    ok = c.ejdb.setindex(collection._wrapped, path_c, flags)
     if not ok:
         raise DatabaseError(
             'Could not {verb} {index_type_name} index '
@@ -87,8 +88,8 @@ def _set_index(collection, verb, path, index_type, flags=0):
 def _get_errmsg(db):
     if isinstance(db, CObjectWrapper):
         db = db._wrapped
-    errcod = c.ejdbecode(db)
-    errmsg = c.ejdberrmsg(errcod)
+    errcod = c.ejdb.ecode(db)
+    errmsg = c.ejdb.errmsg(errcod)
     msg = coerce_str(errmsg)
     return msg[0].upper() + msg[1:] + '.'
 
@@ -97,19 +98,33 @@ def _get_id(document):
     return document.get(c.JDBIDKEYNAME, document[bson.ID_KEY_NAME])
 
 
+def _init_c(func):
+    """Decorator that initialize the C bindings if needed.
+    """
+    @functools.wraps(func)
+    def _decorated(*args, **kwargs):
+        if not c.initialized:
+            c.init()
+        return func(*args, **kwargs)
+
+    return _decorated
+
+
+@_init_c
 def get_ejdb_version():
     """Get version of the underlying EJDB C library.
     """
-    return coerce_str(c.ejdbversion())
+    return coerce_str(c.ejdb.version())
 
 
+@_init_c
 def is_valid_oid(s):
     """Check whether the given string can be used as an OID in EJDB.
 
     The current OID format (as of 1.2.x) is a 24-character-long hex string.
     """
     s = coerce_char_p(s)
-    validness = c.ejdbisvalidoidstr(s)
+    validness = c.ejdb.isvalidoidstr(s)
     return validness
 
 
@@ -138,8 +153,8 @@ class Cursor(tc.ListIterator):
         # stack). Since this is not really a stack value, we don't care about
         # `mincapacity` (the third argument), so we pass 0. `maxonstack` (the
         # fourth argument) is the bson data's length.
-        wrapped = c.bson_create()
-        c.bson_init_on_stack(wrapped, value_p, 0, c.bson_size2(value_p))
+        wrapped = c.bson.create()
+        c.bson.init_on_stack(wrapped, value_p, 0, c.bson.size2(value_p))
         bs = bson.BSON(wrapped)
         obj = bs.decode()
         return obj
@@ -157,7 +172,7 @@ class Transaction(object):
             self._should_exit = False
         else:
             self._should_exit = True
-            ok = c.ejdbtranbegin(collection._wrapped)
+            ok = c.ejdb.tranbegin(collection._wrapped)
             if not ok:
                 raise TransactionError('Could not begin transaction.')
 
@@ -203,7 +218,7 @@ class Collection(object):
 
     def is_in_transaction(self):
         in_tran = ctypes.c_bool()
-        c.ejdbtranstatus(self._wrapped, ctypes.byref(in_tran))
+        c.ejdb.transtatus(self._wrapped, ctypes.byref(in_tran))
         return in_tran.value
 
     def begin_transaction(self, allow_nested=False):
@@ -240,7 +255,7 @@ class Collection(object):
         """
         if not self.is_in_transaction():
             raise TransactionError('Not in a transaction.')
-        ok = c.ejdbtrancommit(self._wrapped)
+        ok = c.ejdb.trancommit(self._wrapped)
         if not ok:
             raise TransactionError('Could not commit transaction.')
 
@@ -249,14 +264,14 @@ class Collection(object):
         """
         if not self.is_in_transaction():
             raise TransactionError('Not in a transaction.')
-        ok = c.ejdbtranabort(self._wrapped)
+        ok = c.ejdb.tranabort(self._wrapped)
         if not ok:
             raise TransactionError('Could not abort transaction.')
 
     def _perform_save(self, document, merge):
         bs = bson.encode(document)
         oid = c.BSONOID()
-        ok = c.ejdbsavebson2(
+        ok = c.ejdb.savebson2(
             self._wrapped, bs._wrapped, ctypes.byref(oid), merge,
         )
         if not ok:
@@ -264,7 +279,7 @@ class Collection(object):
         return oid
 
     def _remove(self, oid):
-        ok = c.ejdbrmbson(self._wrapped, oid)
+        ok = c.ejdb.rmbson(self._wrapped, oid)
         if not ok:
             raise DatabaseError(_get_errmsg(self.database))
 
@@ -275,7 +290,7 @@ class Collection(object):
             pass
         else:
             oid = c.BSONOID.from_string(doc_id)
-            bsdata = c.ejdbloadbson(self._wrapped, ctypes.byref(oid))
+            bsdata = c.ejdb.loadbson(self._wrapped, ctypes.byref(oid))
             if bsdata:  # Matching OID exists.
                 raise OperationError(
                     'Could not insert document. Matching OID exists.'
@@ -321,15 +336,15 @@ class Collection(object):
         else:
             extra_query_bs_array = c.BSONREF(0)
 
-        ejq = c.ejdbcreatequery(
+        ejq = c.ejdb.createquery(
             self._database._wrapped, query_bs._wrapped,
             extra_query_bs_array, extra_query_count, hints._wrapped,
         )
         count = ctypes.c_uint32()
-        tclist_p = c.ejdbqryexecute(
+        tclist_p = c.ejdb.qryexecute(
             self._wrapped, ejq, ctypes.byref(count), 0, c.TCXSTRREF(0),
         )
-        c.ejdbquerydel(ejq)
+        c.ejdb.querydel(ejq)
         return tclist_p, count.value
 
     def count(self, *queries, **kwargs):
@@ -341,7 +356,7 @@ class Collection(object):
         """
         # TODO: Document hints, implement MongoDB-like hinting kwargs.
         tclist_p, count = self._find(queries, kwargs, flags=c.JBQRYCOUNT)
-        c.tclistdel(tclist_p)
+        c.tc.listdel(tclist_p)
         return count
 
     def find_one(self, *queries, **kwargs):
@@ -455,7 +470,7 @@ class Collection(object):
         removed.
         """
         if index_type is None:
-            ok = c.ejdbsetindex(
+            ok = c.ejdb.setindex(
                 self._wrapped, coerce_char_p(path), c.JBIDXDROPALL,
             )
             if not ok:
@@ -542,7 +557,7 @@ class DatabaseSession(object):
             raise DatabaseError('Database already opened.')
 
         path = coerce_char_p(db.path)
-        ok = c.ejdbopen(db._wrapped, path, db.options)
+        ok = c.ejdb.open(db._wrapped, path, db.options)
         if not ok:
             raise DatabaseError(_get_errmsg(db))
 
@@ -568,11 +583,12 @@ class Database(CObjectWrapper):
     `False`. In such cases the user needs to set the path and manually call
     :func:`open` later.
     """
+    @_init_c
     def __init__(self, path='', options=READ):
         """__init__(path='', options=READ)
         """
         super(Database, self).__init__(
-            wrapped=c.ejdbnew(), finalizer=_ejdb_finalizer,
+            wrapped=c.ejdb.new(), finalizer=_ejdb_finalizer,
         )
         self._path = coerce_str(path)
         self._options = options
@@ -586,13 +602,13 @@ class Database(CObjectWrapper):
         return self.get_collection(name)
 
     def __iter__(self):
-        tclist_p = c.ejdbgetcolls(self._wrapped)
+        tclist_p = c.ejdb.getcolls(self._wrapped)
         return CollectionIterator(database=self, wrapped=tclist_p)
 
     def __len__(self):
-        tclist_p = c.ejdbgetcolls(self._wrapped)
-        num = c.tclistnum(tclist_p)
-        c.tclistdel(tclist_p)
+        tclist_p = c.ejdb.getcolls(self._wrapped)
+        num = c.tc.listnum(tclist_p)
+        c.tc.listdel(tclist_p)
         return num
 
     @property
@@ -634,7 +650,7 @@ class Database(CObjectWrapper):
     #         raise DatabaseError(
     #             'Could not read format version of a closed database.'
     #         )
-    #     ver = c.ejdbformatversion()
+    #     ver = c.ejdb.formatversion()
     #     patch = ver % 0x100
     #     ver //= 0x100
     #     minor = ver % 0x100
@@ -670,14 +686,14 @@ class Database(CObjectWrapper):
         """
         if not self.is_open():
             raise DatabaseError('Database not opened.')
-        ok = c.ejdbclose(self._wrapped)
+        ok = c.ejdb.close(self._wrapped)
         if not ok:  # pragma: no cover
             raise DatabaseError(_get_errmsg(self))
 
     def is_open(self):
         """Check whether this EJDB is currently open.
         """
-        open_state = c.ejdbisopen(self._wrapped)
+        open_state = c.ejdb.isopen(self._wrapped)
         return open_state
 
     def create_collection(self, name, exist_ok=False, **options):
@@ -700,7 +716,7 @@ class Database(CObjectWrapper):
             Default is `0`.
         """
         c_name = coerce_char_p(name)
-        if not exist_ok and c.ejdbgetcoll(self._wrapped, c_name):
+        if not exist_ok and c.ejdb.getcoll(self._wrapped, c_name):
             raise DatabaseError(
                 "Collection with name '{name}' already exists.".format(
                     name=name,
@@ -709,7 +725,7 @@ class Database(CObjectWrapper):
         if options is None:
             options = {}
         ejcollopts = c.EJCOLLOPTS(**options)
-        wrapped = c.ejdbcreatecoll(self._wrapped, c_name, ejcollopts)
+        wrapped = c.ejdb.createcoll(self._wrapped, c_name, ejcollopts)
         if not wrapped:     # pragma: no cover
             raise DatabaseError(_get_errmsg(self.database))
         return Collection(database=self, wrapped=wrapped)
@@ -724,7 +740,7 @@ class Database(CObjectWrapper):
             files. Default is `True`.
         """
         c_name = coerce_char_p(name)
-        ok = c.ejdbrmcoll(self._wrapped, c_name, unlink)
+        ok = c.ejdb.rmcoll(self._wrapped, c_name, unlink)
         if not ok:  # pragma: no cover
             raise DatabaseError(_get_errmsg(self.database))
 
@@ -732,7 +748,7 @@ class Database(CObjectWrapper):
         """Get the collection with name `name` inside this EJDB.
         """
         c_name = coerce_char_p(name)
-        wrapped = c.ejdbgetcoll(self._wrapped, c_name)
+        wrapped = c.ejdb.getcoll(self._wrapped, c_name)
         if not wrapped:
             raise CollectionDoesNotExist(name)
         return Collection(database=self, wrapped=wrapped)
@@ -741,7 +757,7 @@ class Database(CObjectWrapper):
         """Check whether this EJDB contains a collection named `name`.
         """
         c_name = coerce_char_p(name)
-        return bool(c.ejdbgetcoll(self._wrapped, c_name))
+        return bool(c.ejdb.getcoll(self._wrapped, c_name))
 
     def find(self, collection_name, *args, **kwargs):
         """find(collection_name, *queries, hints={})

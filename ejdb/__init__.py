@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-VERSION = (0, 2, 1,)
+VERSION = (0, 3, 0,)
 
 __author__ = 'Tzu-ping Chung'
 __email__ = 'uranusjr@gmail.com'
@@ -14,3 +14,4 @@ from .api import (      # noqa
     STRING, ISTRING, NUMBER, ARRAY,
     get_ejdb_version, is_valid_oid, Collection, Database,
 )
+from .c import init     # noqa

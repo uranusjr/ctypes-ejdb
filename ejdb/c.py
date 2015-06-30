@@ -195,354 +195,374 @@ class BSONOID(ctypes.Union):
 
     def __str__(self):
         buf = ctypes.create_string_buffer(25)
-        bson_oid_to_string(ctypes.byref(self), buf)
+        bson.oid_to_string(ctypes.byref(self), buf)
         s = buf.value.decode('ascii')   # ASCII is enough since OID is hex.
         return s
 
     @classmethod
     def from_string(cls, s):
         s = coerce_char_p(s)
-        if not ejdbisvalidoidstr(s):
+        if not ejdb.isvalidoidstr(s):
             raise ValueError('OID should be a 24-character-long hex string.')
         oid = cls()
-        bson_oid_from_string(ctypes.byref(oid), s)
+        bson.oid_from_string(ctypes.byref(oid), s)
         return oid
 
 
 BSONOIDREF = ctypes.POINTER(BSONOID)
 
 
-# Access to the C library.
-_ = ctypes.cdll.LoadLibrary(ctypes.util.find_library('ejdb'))
+class Lib(object):
+    pass
 
-ejdbversion = _.ejdbversion
-ejdbversion.argtypes = []
-ejdbversion.restype = ctypes.c_char_p
 
-# TODO: Expose `ejdbformatversion` as a tuple (int, int, int) when it's
-# available.
+# Will contain C functions after initialization.
+ejdb = Lib()
+bson = Lib()
+tc = Lib()
 
-ejdbisvalidoidstr = _.ejdbisvalidoidstr
-ejdbisvalidoidstr.argtypes = [ctypes.c_char_p]
-ejdbisvalidoidstr.restype = ctypes.c_bool
+initialized = False
 
-ejdbecode = _.ejdbecode
-ejdbecode.argtypes = [EJDBREF]
-ejdbecode.restype = ctypes.c_int
 
-ejdberrmsg = _.ejdberrmsg
-ejdberrmsg.argtypes = [ctypes.c_int]
-ejdberrmsg.restype = ctypes.c_char_p
+def init(ejdb_path=None):
+    if ejdb_path is None:
+        ejdb_path = ctypes.util.find_library('ejdb')
 
-ejdbdel = _.ejdbdel
-ejdbdel.argtypes = [EJDBREF]
-ejdbdel.restype = None
+    # Access to the C library.
+    _ = ctypes.cdll.LoadLibrary(ejdb_path)
 
-ejdbnew = _.ejdbnew
-ejdbnew.argtypes = []
-ejdbnew.restype = EJDBREF
+    ejdb.version = _.ejdbversion
+    ejdb.version.argtypes = []
+    ejdb.version.restype = ctypes.c_char_p
 
-ejdbclose = _.ejdbclose
-ejdbclose.argtypes = [EJDBREF]
-ejdbclose.restype = ctypes.c_bool
+    # TODO: Expose `ejdbformatversion` as a tuple (int, int, int) when it's
+    # available.
 
-ejdbopen = _.ejdbopen
-ejdbopen.argtypes = [EJDBREF, ctypes.c_char_p, ctypes.c_int]
-ejdbopen.restype = ctypes.c_bool
+    ejdb.isvalidoidstr = _.ejdbisvalidoidstr
+    ejdb.isvalidoidstr.argtypes = [ctypes.c_char_p]
+    ejdb.isvalidoidstr.restype = ctypes.c_bool
 
-ejdbisopen = _.ejdbisopen
-ejdbisopen.argtypes = [EJDBREF]
-ejdbisopen.restype = ctypes.c_bool
+    ejdb.ecode = _.ejdbecode
+    ejdb.ecode.argtypes = [EJDBREF]
+    ejdb.ecode.restype = ctypes.c_int
 
+    ejdb.errmsg = _.ejdberrmsg
+    ejdb.errmsg.argtypes = [ctypes.c_int]
+    ejdb.errmsg.restype = ctypes.c_char_p
 
-ejdbgetcoll = _.ejdbgetcoll
-ejdbgetcoll.argtypes = [EJDBREF, ctypes.c_char_p]
-ejdbgetcoll.restype = EJCOLLREF
+    ejdb.del_ = _.ejdbdel
+    ejdb.del_.argtypes = [EJDBREF]
+    ejdb.del_.restype = None
 
-ejdbgetcolls = _.ejdbgetcolls
-ejdbgetcolls.argtypes = [EJDBREF]
-ejdbgetcolls.restype = ctypes.c_void_p
+    ejdb.new = _.ejdbnew
+    ejdb.new.argtypes = []
+    ejdb.new.restype = EJDBREF
 
-ejdbcreatecoll = _.ejdbcreatecoll
-ejdbcreatecoll.argtypes = [EJDBREF, ctypes.c_char_p, EJCOLLOPTSREF]
-ejdbcreatecoll.restype = EJCOLLREF
+    ejdb.close = _.ejdbclose
+    ejdb.close.argtypes = [EJDBREF]
+    ejdb.close.restype = ctypes.c_bool
 
-ejdbrmcoll = _.ejdbrmcoll
-ejdbrmcoll.argtypes = [EJDBREF, ctypes.c_char_p, ctypes.c_bool]
-ejdbrmcoll.restype = ctypes.c_bool
+    ejdb.open = _.ejdbopen
+    ejdb.open.argtypes = [EJDBREF, ctypes.c_char_p, ctypes.c_int]
+    ejdb.open.restype = ctypes.c_bool
 
-ejdbsavebson2 = _.ejdbsavebson2
-ejdbsavebson2.argtypes = [EJCOLLREF, BSONREF, BSONOIDREF, ctypes.c_bool]
-ejdbsavebson2.restype = ctypes.c_bool
+    ejdb.isopen = _.ejdbisopen
+    ejdb.isopen.argtypes = [EJDBREF]
+    ejdb.isopen.restype = ctypes.c_bool
 
-ejdbrmbson = _.ejdbrmbson
-ejdbrmbson.argtypes = [EJCOLLREF, BSONOIDREF]
-ejdbrmbson.restype = ctypes.c_bool
+    #
 
-ejdbloadbson = _.ejdbloadbson
-ejdbloadbson.argtypes = [EJCOLLREF, BSONOIDREF]
-ejdbloadbson.restype = BSONREF
+    ejdb.getcoll = _.ejdbgetcoll
+    ejdb.getcoll.argtypes = [EJDBREF, ctypes.c_char_p]
+    ejdb.getcoll.restype = EJCOLLREF
 
-ejdbsetindex = _.ejdbsetindex
-ejdbsetindex.argtypes = [EJCOLLREF, ctypes.c_char_p, ctypes.c_int]
-ejdbsetindex.restype = ctypes.c_bool
+    ejdb.getcolls = _.ejdbgetcolls
+    ejdb.getcolls.argtypes = [EJDBREF]
+    ejdb.getcolls.restype = ctypes.c_void_p
 
-ejdbmeta = _.ejdbmeta
-ejdbmeta.argtypes = [EJDBREF]
-ejdbmeta.restype = BSONREF
+    ejdb.createcoll = _.ejdbcreatecoll
+    ejdb.createcoll.argtypes = [EJDBREF, ctypes.c_char_p, EJCOLLOPTSREF]
+    ejdb.createcoll.restype = EJCOLLREF
 
+    ejdb.rmcoll = _.ejdbrmcoll
+    ejdb.rmcoll.argtypes = [EJDBREF, ctypes.c_char_p, ctypes.c_bool]
+    ejdb.rmcoll.restype = ctypes.c_bool
 
-ejdbcreatequery = _.ejdbcreatequery
-ejdbcreatequery.argtypes = [EJDBREF, BSONREF, BSONREF, ctypes.c_int, BSONREF]
-ejdbcreatequery.restype = EJQREF
-
-ejdbquerydel = _.ejdbquerydel
-ejdbquerydel.argtypes = [EJQREF]
-ejdbquerydel.restype = None
-
-ejdbqryexecute = _.ejdbqryexecute
-ejdbqryexecute.argtypes = [
-    EJCOLLREF,
-    EJQREF,         # The query.
-    ctypes.POINTER(ctypes.c_uint32),    # Will hold the output count.
-    ctypes.c_int,   # If set to `JBQRYCOUNT`, only performs counting.
-    TCXSTRREF,      # Optional debug logging output.
-]
-ejdbqryexecute.restype = EJQRESULT
-
-
-ejdbtranbegin = _.ejdbtranbegin
-ejdbtranbegin.argtypes = [EJCOLLREF]
-ejdbtranbegin.restype = ctypes.c_bool
-
-ejdbtrancommit = _.ejdbtrancommit
-ejdbtrancommit.argtypes = [EJCOLLREF]
-ejdbtrancommit.restype = ctypes.c_bool
-
-ejdbtranabort = _.ejdbtranabort
-ejdbtranabort.argtypes = [EJCOLLREF]
-ejdbtranabort.restype = ctypes.c_bool
-
-ejdbtranstatus = _.ejdbtranstatus
-ejdbtranstatus.argtypes = [EJCOLLREF, ctypes.POINTER(ctypes.c_bool)]
-ejdbtranstatus.restype = ctypes.c_bool
-
-ejdbsyncdb = _.ejdbsyncdb
-ejdbsyncdb.argtypes = [EJDBREF]
-ejdbsyncdb.restype = ctypes.c_bool
-
-
-tclistdel = _.tclistdel
-tclistdel.argtypes = [TCLISTREF]
-tclistdel.restype = None
-
-tclistnum = _.tclistnum
-tclistnum.argtypes = [TCLISTREF]
-tclistnum.restype = ctypes.c_int
-
-# Return type in the original tcutil.h declaration is char *, but it really is
-# a data array, so we use c_void_p here to prevent Python casting it to bytes.
-# Consumer of this method should use ctypes.string_at or ctypes.cast to get the
-# content.
-tclistval2 = _.tclistval2
-tclistval2.argtypes = [TCLISTREF, ctypes.c_int]
-tclistval2.restype = ctypes.c_void_p
-
-
-bson_create = _.bson_create
-bson_create.argtypes = []
-bson_create.restype = BSONREF
-
-bson_del = _.bson_del
-bson_del.argtypes = [BSONREF]
-bson_del.restype = None
-
-bson_init = _.bson_init
-bson_init.argtypes = [BSONREF]
-bson_init.restype = None
-
-bson_init_as_query = _.bson_init_as_query
-bson_init_as_query.argtypes = [BSONREF]
-bson_init_as_query.restype = None
-
-# Second arg type in the original bson.h declaration is char *, but it really
-# is a data pointer, so we use c_void_p here.
-bson_init_on_stack = _.bson_init_on_stack
-bson_init_on_stack.argtypes = [
-    BSONREF, ctypes.c_void_p, ctypes.c_int, ctypes.c_int,
-]
-bson_init_on_stack.restype = None
-
-bson_finish = _.bson_finish
-bson_finish.argtypes = [BSONREF]
-bson_finish.restype = ctypes.c_int
-
-bson_append_oid = _.bson_append_oid
-bson_append_oid.argtypes = [BSONREF, ctypes.c_char_p, BSONOIDREF]
-bson_append_oid.restype = ctypes.c_int
-
-bson_append_int = _.bson_append_int
-bson_append_int.argtypes = [BSONREF, ctypes.c_char_p, ctypes.c_int]
-bson_append_int.restype = ctypes.c_int
-
-bson_append_long = _.bson_append_long
-bson_append_long.argtypes = [BSONREF, ctypes.c_char_p, ctypes.c_int64]
-bson_append_long.restype = ctypes.c_int
-
-bson_append_double = _.bson_append_double
-bson_append_double.argtypes = [BSONREF, ctypes.c_char_p, ctypes.c_double]
-bson_append_double.restype = ctypes.c_int
-
-bson_append_string_n = _.bson_append_string_n
-bson_append_string_n.argtypes = [
-    BSONREF, ctypes.c_char_p, ctypes.c_char_p, ctypes.c_int,
-]
-bson_append_string_n.restype = ctypes.c_int
-
-# Type of the third argument in the original bson.h declaration is char, but it
-# really is an enum value, so we use c_int instead.
-bson_append_binary = _.bson_append_binary
-bson_append_binary.argtypes = [
-    BSONREF, ctypes.c_char_p, ctypes.c_int, ctypes.c_char_p, ctypes.c_int,
-]
-bson_append_binary.restype = ctypes.c_int
-
-bson_append_bool = _.bson_append_bool
-bson_append_bool.argtypes = [BSONREF, ctypes.c_char_p, ctypes.c_bool]
-bson_append_bool.restype = ctypes.c_int
-
-bson_append_null = _.bson_append_null
-bson_append_null.argtypes = [BSONREF, ctypes.c_char_p]
-bson_append_null.restype = ctypes.c_int
-
-bson_append_undefined = _.bson_append_undefined
-bson_append_undefined.argtypes = [BSONREF, ctypes.c_char_p]
-bson_append_undefined.restype = ctypes.c_int
-
-bson_append_regex = _.bson_append_regex
-bson_append_regex.argtypes = [
-    BSONREF, ctypes.c_char_p, ctypes.c_char_p, ctypes.c_int,
-]
-bson_append_regex.restype = ctypes.c_int
-
-bson_append_date = _.bson_append_date
-bson_append_date.argtypes = [BSONREF, ctypes.c_char_p, ctypes.c_int64]
-bson_append_date.restype = ctypes.c_int
-
-bson_append_start_array = _.bson_append_start_array
-bson_append_start_array.argtypes = [BSONREF, ctypes.c_char_p]
-bson_append_start_array.restype = ctypes.c_int
-
-bson_append_finish_array = _.bson_append_finish_array
-bson_append_finish_array.argtypes = [BSONREF]
-bson_append_finish_array.restype = ctypes.c_int
-
-bson_append_start_object = _.bson_append_start_object
-bson_append_start_object.argtypes = [BSONREF, ctypes.c_char_p]
-bson_append_start_object.restype = ctypes.c_int
-
-bson_append_finish_object = _.bson_append_finish_object
-bson_append_finish_object.argtypes = [BSONREF]
-bson_append_finish_object.restype = ctypes.c_int
-
-# Return type in the original bson.h declaration is char *, but it really is
-# a data array, so we use c_void_p here to prevent Python casting it to bytes.
-# Consumer of this method should use ctypes.string_at to get the content.
-bson_data2 = _.bson_data2
-bson_data2.argtypes = [BSONREF, ctypes.POINTER(ctypes.c_int)]
-bson_data2.restype = ctypes.c_void_p
-
-bson_size2 = _.bson_size2
-bson_size2.argtypes = [ctypes.c_void_p]
-bson_size2.restype = ctypes.c_int
-
-bson_oid_from_string = _.bson_oid_from_string
-bson_oid_from_string.argtypes = [BSONOIDREF, ctypes.c_char_p]
-bson_oid_from_string.restype = None
-
-bson_oid_to_string = _.bson_oid_to_string
-bson_oid_to_string.argtypes = [BSONOIDREF, ctypes.c_char_p]
-bson_oid_to_string.restype = None
-
-bson_iterator_create = _.bson_iterator_create
-bson_iterator_create.argtypes = []
-bson_iterator_create.restype = BSONITERREF
-
-bson_iterator_dispose = _.bson_iterator_dispose
-bson_iterator_dispose.argtypes = [BSONITERREF]
-bson_iterator_dispose.restype = None
-
-bson_iterator_init = _.bson_iterator_init
-bson_iterator_init.argtypes = [BSONITERREF, BSONREF]
-bson_iterator_init.restype = None
-
-bson_iterator_next = _.bson_iterator_next
-bson_iterator_next.argtypes = [BSONITERREF]
-bson_iterator_next.restype = ctypes.c_int
-
-bson_iterator_key = _.bson_iterator_key
-bson_iterator_key.argtypes = [BSONITERREF]
-bson_iterator_key.restype = ctypes.c_char_p
-
-bson_iterator_double_raw = _.bson_iterator_double_raw
-bson_iterator_double_raw.argtypes = [BSONITERREF]
-bson_iterator_double_raw.restype = ctypes.c_double
-
-bson_iterator_int_raw = _.bson_iterator_int_raw
-bson_iterator_int_raw.argtypes = [BSONITERREF]
-bson_iterator_int_raw.restype = ctypes.c_int
-
-bson_iterator_long_raw = _.bson_iterator_long_raw
-bson_iterator_long_raw.argtypes = [BSONITERREF]
-bson_iterator_long_raw.restype = ctypes.c_int64
-
-bson_iterator_bool_raw = _.bson_iterator_bool_raw
-bson_iterator_bool_raw.argtypes = [BSONITERREF]
-bson_iterator_bool_raw.restype = ctypes.c_bool
-
-bson_iterator_oid = _.bson_iterator_oid
-bson_iterator_oid.argtypes = [BSONITERREF]
-bson_iterator_oid.restype = BSONOIDREF
-
-# Return type in the original bson.h declaration is char *, but it really is
-# a data array, so we use c_void_p here to prevent Python casting it to bytes.
-# Consumer of this method should use ctypes.string_at to get the content.
-bson_iterator_string = _.bson_iterator_string
-bson_iterator_string.argtypes = [BSONITERREF]
-bson_iterator_string.restype = ctypes.c_void_p
-
-bson_iterator_string_len = _.bson_iterator_string_len
-bson_iterator_string_len.argtypes = [BSONITERREF]
-bson_iterator_string_len.restype = ctypes.c_int
-
-bson_iterator_bin_len = _.bson_iterator_bin_len
-bson_iterator_bin_len.argtypes = [BSONITERREF]
-bson_iterator_bin_len.restype = ctypes.c_int
-
-# Return type in the original bson.h declaration is char, but it really is an
-# enum value, so we use c_int instead.
-bson_iterator_bin_type = _.bson_iterator_bin_type
-bson_iterator_bin_type.argtypes = [BSONITERREF]
-bson_iterator_bin_type.restype = ctypes.c_int
-
-# Return type in the original bson.h declaration is char *, but it really is
-# a data array, so we use c_void_p here to prevent Python casting it to bytes.
-# Consumer of this method should use ctypes.string_at to get the content.
-bson_iterator_bin_data = _.bson_iterator_bin_data
-bson_iterator_bin_data.argtypes = [BSONITERREF]
-bson_iterator_bin_data.restype = ctypes.c_void_p
-
-bson_iterator_date = _.bson_iterator_date
-bson_iterator_date.argtypes = [BSONITERREF]
-bson_iterator_date.restype = ctypes.c_int64
-
-bson_iterator_subiterator = _.bson_iterator_subiterator
-bson_iterator_subiterator.argtypes = [BSONITERREF, BSONITERREF]
-bson_iterator_subiterator.restype = None
-
-
-# For debugging.
-
-bson_print_raw = _.bson_print_raw
-bson_print_raw.argtypes = [ctypes.c_char_p, ctypes.c_int]
-bson_print_raw.restype = None
+    ejdb.savebson2 = _.ejdbsavebson2
+    ejdb.savebson2.argtypes = [EJCOLLREF, BSONREF, BSONOIDREF, ctypes.c_bool]
+    ejdb.savebson2.restype = ctypes.c_bool
+
+    ejdb.rmbson = _.ejdbrmbson
+    ejdb.rmbson.argtypes = [EJCOLLREF, BSONOIDREF]
+    ejdb.rmbson.restype = ctypes.c_bool
+
+    ejdb.loadbson = _.ejdbloadbson
+    ejdb.loadbson.argtypes = [EJCOLLREF, BSONOIDREF]
+    ejdb.loadbson.restype = BSONREF
+
+    ejdb.setindex = _.ejdbsetindex
+    ejdb.setindex.argtypes = [EJCOLLREF, ctypes.c_char_p, ctypes.c_int]
+    ejdb.setindex.restype = ctypes.c_bool
+
+    ejdb.meta = _.ejdbmeta
+    ejdb.meta.argtypes = [EJDBREF]
+    ejdb.meta.restype = BSONREF
+
+    #
+
+    ejdb.createquery = _.ejdbcreatequery
+    ejdb.createquery.argtypes = [
+        EJDBREF, BSONREF, BSONREF, ctypes.c_int, BSONREF,
+    ]
+    ejdb.createquery.restype = EJQREF
+
+    ejdb.querydel = _.ejdbquerydel
+    ejdb.querydel.argtypes = [EJQREF]
+    ejdb.querydel.restype = None
+
+    ejdb.qryexecute = _.ejdbqryexecute
+    ejdb.qryexecute.argtypes = [
+        EJCOLLREF,
+        EJQREF,         # The query.
+        ctypes.POINTER(ctypes.c_uint32),    # Will hold the output count.
+        ctypes.c_int,   # If set to `JBQRYCOUNT`, only performs counting.
+        TCXSTRREF,      # Optional debug logging output.
+    ]
+    ejdb.qryexecute.restype = EJQRESULT
+
+    #
+
+    ejdb.tranbegin = _.ejdbtranbegin
+    ejdb.tranbegin.argtypes = [EJCOLLREF]
+    ejdb.tranbegin.restype = ctypes.c_bool
+
+    ejdb.trancommit = _.ejdbtrancommit
+    ejdb.trancommit.argtypes = [EJCOLLREF]
+    ejdb.trancommit.restype = ctypes.c_bool
+
+    ejdb.tranabort = _.ejdbtranabort
+    ejdb.tranabort.argtypes = [EJCOLLREF]
+    ejdb.tranabort.restype = ctypes.c_bool
+
+    ejdb.transtatus = _.ejdbtranstatus
+    ejdb.transtatus.argtypes = [EJCOLLREF, ctypes.POINTER(ctypes.c_bool)]
+    ejdb.transtatus.restype = ctypes.c_bool
+
+    ejdb.syncdb = _.ejdbsyncdb
+    ejdb.syncdb.argtypes = [EJDBREF]
+    ejdb.syncdb.restype = ctypes.c_bool
+
+    tc.listdel = _.tclistdel
+    tc.listdel.argtypes = [TCLISTREF]
+    tc.listdel.restype = None
+
+    tc.listnum = _.tclistnum
+    tc.listnum.argtypes = [TCLISTREF]
+    tc.listnum.restype = ctypes.c_int
+
+    # Return type in the original tcutil.h declaration is char *, but it really
+    # is a data array, so we use c_void_p here to prevent Python casting it to
+    # bytes. Consumer of this method should use ctypes.string_at or ctypes.cast
+    # to get the content.
+    tc.listval2 = _.tclistval2
+    tc.listval2.argtypes = [TCLISTREF, ctypes.c_int]
+    tc.listval2.restype = ctypes.c_void_p
+
+    bson.create = _.bson_create
+    bson.create.argtypes = []
+    bson.create.restype = BSONREF
+
+    bson.del_ = _.bson_del
+    bson.del_.argtypes = [BSONREF]
+    bson.del_.restype = None
+
+    bson.init = _.bson_init
+    bson.init.argtypes = [BSONREF]
+    bson.init.restype = None
+
+    bson.init_as_query = _.bson_init_as_query
+    bson.init_as_query.argtypes = [BSONREF]
+    bson.init_as_query.restype = None
+
+    # Second arg type in the original bson.h declaration is char *, but it
+    # really is a data pointer, so we use c_void_p here.
+    bson.init_on_stack = _.bson_init_on_stack
+    bson.init_on_stack.argtypes = [
+        BSONREF, ctypes.c_void_p, ctypes.c_int, ctypes.c_int,
+    ]
+    bson.init_on_stack.restype = None
+
+    bson.finish = _.bson_finish
+    bson.finish.argtypes = [BSONREF]
+    bson.finish.restype = ctypes.c_int
+
+    bson.append_oid = _.bson_append_oid
+    bson.append_oid.argtypes = [BSONREF, ctypes.c_char_p, BSONOIDREF]
+    bson.append_oid.restype = ctypes.c_int
+
+    bson.append_int = _.bson_append_int
+    bson.append_int.argtypes = [BSONREF, ctypes.c_char_p, ctypes.c_int]
+    bson.append_int.restype = ctypes.c_int
+
+    bson.append_long = _.bson_append_long
+    bson.append_long.argtypes = [BSONREF, ctypes.c_char_p, ctypes.c_int64]
+    bson.append_long.restype = ctypes.c_int
+
+    bson.append_double = _.bson_append_double
+    bson.append_double.argtypes = [BSONREF, ctypes.c_char_p, ctypes.c_double]
+    bson.append_double.restype = ctypes.c_int
+
+    bson.append_string_n = _.bson_append_string_n
+    bson.append_string_n.argtypes = [
+        BSONREF, ctypes.c_char_p, ctypes.c_char_p, ctypes.c_int,
+    ]
+    bson.append_string_n.restype = ctypes.c_int
+
+    # Type of the third argument in the original bson.h declaration is char,
+    # but it really is an enum value, so we use c_int instead.
+    bson.append_binary = _.bson_append_binary
+    bson.append_binary.argtypes = [
+        BSONREF, ctypes.c_char_p, ctypes.c_int, ctypes.c_char_p, ctypes.c_int,
+    ]
+    bson.append_binary.restype = ctypes.c_int
+
+    bson.append_bool = _.bson_append_bool
+    bson.append_bool.argtypes = [BSONREF, ctypes.c_char_p, ctypes.c_bool]
+    bson.append_bool.restype = ctypes.c_int
+
+    bson.append_null = _.bson_append_null
+    bson.append_null.argtypes = [BSONREF, ctypes.c_char_p]
+    bson.append_null.restype = ctypes.c_int
+
+    bson.append_undefined = _.bson_append_undefined
+    bson.append_undefined.argtypes = [BSONREF, ctypes.c_char_p]
+    bson.append_undefined.restype = ctypes.c_int
+
+    bson.append_regex = _.bson_append_regex
+    bson.append_regex.argtypes = [
+        BSONREF, ctypes.c_char_p, ctypes.c_char_p, ctypes.c_int,
+    ]
+    bson.append_regex.restype = ctypes.c_int
+
+    bson.append_date = _.bson_append_date
+    bson.append_date.argtypes = [BSONREF, ctypes.c_char_p, ctypes.c_int64]
+    bson.append_date.restype = ctypes.c_int
+
+    bson.append_start_array = _.bson_append_start_array
+    bson.append_start_array.argtypes = [BSONREF, ctypes.c_char_p]
+    bson.append_start_array.restype = ctypes.c_int
+
+    bson.append_finish_array = _.bson_append_finish_array
+    bson.append_finish_array.argtypes = [BSONREF]
+    bson.append_finish_array.restype = ctypes.c_int
+
+    bson.append_start_object = _.bson_append_start_object
+    bson.append_start_object.argtypes = [BSONREF, ctypes.c_char_p]
+    bson.append_start_object.restype = ctypes.c_int
+
+    bson.append_finish_object = _.bson_append_finish_object
+    bson.append_finish_object.argtypes = [BSONREF]
+    bson.append_finish_object.restype = ctypes.c_int
+
+    # Return type in the original bson.h declaration is char *, but it really
+    # is a data array, so we use c_void_p here to prevent Python casting it to
+    # bytes. Consumer should use ctypes.string_at to get content.
+    bson.data2 = _.bson_data2
+    bson.data2.argtypes = [BSONREF, ctypes.POINTER(ctypes.c_int)]
+    bson.data2.restype = ctypes.c_void_p
+
+    bson.size2 = _.bson_size2
+    bson.size2.argtypes = [ctypes.c_void_p]
+    bson.size2.restype = ctypes.c_int
+
+    bson.oid_from_string = _.bson_oid_from_string
+    bson.oid_from_string.argtypes = [BSONOIDREF, ctypes.c_char_p]
+    bson.oid_from_string.restype = None
+
+    bson.oid_to_string = _.bson_oid_to_string
+    bson.oid_to_string.argtypes = [BSONOIDREF, ctypes.c_char_p]
+    bson.oid_to_string.restype = None
+
+    bson.iterator_create = _.bson_iterator_create
+    bson.iterator_create.argtypes = []
+    bson.iterator_create.restype = BSONITERREF
+
+    bson.iterator_dispose = _.bson_iterator_dispose
+    bson.iterator_dispose.argtypes = [BSONITERREF]
+    bson.iterator_dispose.restype = None
+
+    bson.iterator_init = _.bson_iterator_init
+    bson.iterator_init.argtypes = [BSONITERREF, BSONREF]
+    bson.iterator_init.restype = None
+
+    bson.iterator_next = _.bson_iterator_next
+    bson.iterator_next.argtypes = [BSONITERREF]
+    bson.iterator_next.restype = ctypes.c_int
+
+    bson.iterator_key = _.bson_iterator_key
+    bson.iterator_key.argtypes = [BSONITERREF]
+    bson.iterator_key.restype = ctypes.c_char_p
+
+    bson.iterator_double_raw = _.bson_iterator_double_raw
+    bson.iterator_double_raw.argtypes = [BSONITERREF]
+    bson.iterator_double_raw.restype = ctypes.c_double
+
+    bson.iterator_int_raw = _.bson_iterator_int_raw
+    bson.iterator_int_raw.argtypes = [BSONITERREF]
+    bson.iterator_int_raw.restype = ctypes.c_int
+
+    bson.iterator_long_raw = _.bson_iterator_long_raw
+    bson.iterator_long_raw.argtypes = [BSONITERREF]
+    bson.iterator_long_raw.restype = ctypes.c_int64
+
+    bson.iterator_bool_raw = _.bson_iterator_bool_raw
+    bson.iterator_bool_raw.argtypes = [BSONITERREF]
+    bson.iterator_bool_raw.restype = ctypes.c_bool
+
+    bson.iterator_oid = _.bson_iterator_oid
+    bson.iterator_oid.argtypes = [BSONITERREF]
+    bson.iterator_oid.restype = BSONOIDREF
+
+    # Return type in the original bson.h declaration is char *, but it really
+    # is a data array, so we use c_void_p here to prevent Python casting it to
+    # bytes. Consumer should use ctypes.string_at to get content.
+    bson.iterator_string = _.bson_iterator_string
+    bson.iterator_string.argtypes = [BSONITERREF]
+    bson.iterator_string.restype = ctypes.c_void_p
+
+    bson.iterator_string_len = _.bson_iterator_string_len
+    bson.iterator_string_len.argtypes = [BSONITERREF]
+    bson.iterator_string_len.restype = ctypes.c_int
+
+    bson.iterator_bin_len = _.bson_iterator_bin_len
+    bson.iterator_bin_len.argtypes = [BSONITERREF]
+    bson.iterator_bin_len.restype = ctypes.c_int
+
+    # Return type in the original bson.h declaration is char, but it really is
+    # an enum value, so we use c_int instead.
+    bson.iterator_bin_type = _.bson_iterator_bin_type
+    bson.iterator_bin_type.argtypes = [BSONITERREF]
+    bson.iterator_bin_type.restype = ctypes.c_int
+
+    # Return type in the original bson.h declaration is char *, but it really
+    # is a data array, so we use c_void_p here to prevent Python casting it to
+    # bytes. Consumer should use ctypes.string_at to get content.
+    bson.iterator_bin_data = _.bson_iterator_bin_data
+    bson.iterator_bin_data.argtypes = [BSONITERREF]
+    bson.iterator_bin_data.restype = ctypes.c_void_p
+
+    bson.iterator_date = _.bson_iterator_date
+    bson.iterator_date.argtypes = [BSONITERREF]
+    bson.iterator_date.restype = ctypes.c_int64
+
+    bson.iterator_subiterator = _.bson_iterator_subiterator
+    bson.iterator_subiterator.argtypes = [BSONITERREF, BSONITERREF]
+    bson.iterator_subiterator.restype = None
+
+    # For debugging.
+    bson.print_raw = _.bson_print_raw
+    bson.print_raw.argtypes = [ctypes.c_char_p, ctypes.c_int]
+    bson.print_raw.restype = None
+
+    global initialized
+    initialized = True

@@ -12,10 +12,10 @@ class ListIterator(CObjectWrapper):
     """
     def __init__(self, wrapped, count=None):
         super(ListIterator, self).__init__(
-            wrapped=wrapped, finalizer=c.tclistdel,
+            wrapped=wrapped, finalizer=c.tc.listdel,
         )
         if count is None:
-            count = c.tclistnum(wrapped)
+            count = c.tc.listnum(wrapped)
         self._len = count
         self._i = 0
 
@@ -31,14 +31,14 @@ class ListIterator(CObjectWrapper):
         elif isinstance(key, numbers.Number):
             if key >= len(self):
                 raise IndexError('Iterator index out of range.')
-            value_p = c.tclistval2(self._wrapped, key)
+            value_p = c.tc.listval2(self._wrapped, key)
             return self.instantiate(value_p)
         return NotImplemented
 
     def __next__(self):
         if self._i >= self._len:
             raise StopIteration
-        value_p = c.tclistval2(self._wrapped, self._i)
+        value_p = c.tc.listval2(self._wrapped, self._i)
         self._i += 1
         return self.instantiate(value_p)
 
