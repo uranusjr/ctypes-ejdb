@@ -6,10 +6,10 @@ ctypes-ejdb
     :target: http://badge.fury.io/py/ctypes-ejdb
 
 .. image:: https://travis-ci.org/uranusjr/ctypes-ejdb.png?branch=master
-        :target: https://travis-ci.org/uranusjr/ctypes-ejdb
+    :target: https://travis-ci.org/uranusjr/ctypes-ejdb
 
 .. image:: https://pypip.in/d/ctypes-ejdb/badge.png
-        :target: https://pypi.python.org/pypi/ctypes-ejdb
+    :target: https://pypi.python.org/pypi/ctypes-ejdb
 
 
 Python binding for EJDB built on ctypes.
@@ -21,7 +21,7 @@ Python binding for EJDB built on ctypes.
 Features
 --------
 
-* Pure Python—only Python (2.7 or 3.3+) and an `EJDB binary`_ is needed. No need to compile anything.
+* Pure Python. Only Python (2.7 or 3.3+) and an `EJDB binary`_ is needed. No need to compile anything.
 
 
 Future Features
