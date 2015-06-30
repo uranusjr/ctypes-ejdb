@@ -776,3 +776,20 @@ class Database(CObjectWrapper):
         """
         coll = self.create_collection(collection_name, exist_ok=True)
         return coll.find_one(*args, **kwargs)
+
+    def save(self, collection_name, *args, **kwargs):
+        """save(collection_name, *documents, merge=False)
+
+        Shortcut to save to a collection in the database.
+
+        The following usage::
+
+            db.save({'people', {'name': 'TP'})
+
+        is semantically identical to::
+
+            collection = db.create_collection('people', exist_ok=True)
+            collection.save({'name': 'TP'})
+        """
+        coll = self.create_collection(collection_name, exist_ok=True)
+        return coll.save(*args, **kwargs)
