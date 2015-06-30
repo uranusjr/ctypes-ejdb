@@ -672,7 +672,7 @@ class Database(CObjectWrapper):
             raise DatabaseError('Database not opened.')
         ok = c.ejdbclose(self._wrapped)
         if not ok:  # pragma: no cover
-            raise DatabaseError(_get_errmsg(self.database))
+            raise DatabaseError(_get_errmsg(self))
 
     def is_open(self):
         """Check whether this EJDB is currently open.
