@@ -2,7 +2,9 @@
 # -*- coding: utf-8 -*-
 
 from __future__ import unicode_literals
+import os
 import re
+import shutil
 import tempfile
 
 from ctypes import byref
@@ -51,8 +53,12 @@ class TestDatabaseInvalid(object):
     def test_init_notexist_autocreate(self):
         """Construction is automatic if we give the `CREATE` flag.
         """
-        tfile = tempfile.NamedTemporaryFile()
-        api.Database(path=tfile.name, options=(api.WRITE | api.CREATE))
+        dirpath = tempfile.mkdtemp()
+        path = os.path.join(dirpath, 'yksom')
+        assert not os.path.exists(path)
+        jb = api.Database(path=path, options=(api.WRITE | api.CREATE))
+        jb.close()
+        shutil.rmtree(dirpath)
 
     def test_path_setter(self):
         """An unopend database can change its path.
@@ -84,58 +90,69 @@ class TestDatabaseInit(object):
     def setup(self):
         """Setup a temp database for read-only tests.
         """
-        self.tfile = tempfile.NamedTemporaryFile()
-        path = self.tfile.name
+        self.dirpath = tempfile.mkdtemp()
+        path = os.path.join(self.dirpath, 'yksom')
+        assert not os.path.exists(path)
+        self.path = path
         if not isinstance(path, six.binary_type):
             path = path.encode('utf-8')
-        self.path = path
+        self.path_b = path
+
+        # Create an empty database.
         jb = c.ejdbnew()
-        c.ejdbopen(jb, self.path, c.JBOWRITER | c.JBOCREAT)
+        c.ejdbopen(jb, self.path_b, c.JBOWRITER | c.JBOCREAT)
         c.ejdbclose(jb)
         c.ejdbdel(jb)
 
+    def teardown(self):
+        if self.jb.is_open():
+            self.jb.close()
+        shutil.rmtree(self.dirpath)
+
     def test_init(self):
-        jb = api.Database(path=self.tfile.name)
-        assert jb.is_open()
+        self.jb = api.Database(path=self.path)
+        assert self.jb.is_open()
 
     def test_init_bytespath(self):
-        jb = api.Database(path=self.path)
-        assert jb.is_open()
+        self.jb = api.Database(path=self.path_b)
+        assert self.jb.is_open()
 
     def test_open_reopen(self):
-        jb = api.Database(path=self.path)
+        self.jb = api.Database(path=self.path)
         with pytest.raises(api.DatabaseError) as ctx:
-            jb.open()
+            self.jb.open()
         assert str(ctx.value) == 'Database already opened.'
 
-        jb.close()
-        assert not jb.is_open()
+        self.jb.close()
+        assert not self.jb.is_open()
 
-        jb.open()
-        assert jb.is_open()
+        self.jb.open()
+        assert self.jb.is_open()
 
     def test_close_reclose(self):
-        jb = api.Database(path=self.path)
-        jb.close()
+        self.jb = api.Database(path=self.path)
+        self.jb.close()
         with pytest.raises(api.DatabaseError) as ctx:
-            jb.close()
+            self.jb.close()
         assert str(ctx.value) == 'Database not opened.'
 
     def test_path_setter_opened(self):
         """An open database cannot change its path.
         """
-        jb = api.Database(path=self.path)
-        assert isinstance(jb.path, six.string_types)
-        assert jb.path == self.tfile.name
+        self.jb = api.Database(path=self.path)
+        assert isinstance(self.jb.path, six.string_types)
+        assert self.jb.path == self.path
         with pytest.raises(api.DatabaseError) as ctx:
-            jb.path = 'yksom'
+            self.jb.path = 'yksom'
         assert str(ctx.value) == 'Could not set path to an open database.'
 
     def test_option_setter_opened(self):
-        jb = api.Database(path=self.path, options=(api.WRITE | api.TRUNCATE))
-        assert jb.options == (api.WRITE | api.TRUNCATE)
+        self.jb = api.Database(
+            path=self.path, options=(api.WRITE | api.TRUNCATE),
+        )
+        assert self.jb.options == (api.WRITE | api.TRUNCATE)
         with pytest.raises(api.DatabaseError) as ctx:
-            jb.options = api.READ
+            self.jb.options = api.READ
         assert str(ctx.value) == 'Could not set options to an open database.'
 
 
@@ -144,10 +161,16 @@ class TestDatabase(object):
     def setup(self):
         """Create a database for testing.
         """
-        self.tfile = tempfile.NamedTemporaryFile()
+        self.dirpath = tempfile.mkdtemp()
+        path = os.path.join(self.dirpath, 'yksom')
         self.jb = api.Database(
-            path=self.tfile.name, options=(api.WRITE | api.TRUNCATE),
+            path=path, options=(api.WRITE | api.TRUNCATE | api.CREATE),
         )
+
+    def teardown(self):
+        if self.jb.is_open():
+            self.jb.close()
+        shutil.rmtree(self.dirpath)
 
     if six.PY2:
         def test_get_collection(self):
@@ -212,13 +235,20 @@ class TestDatabase(object):
 class TestCollection(object):
 
     def setup(self):
-        self.tfile = tempfile.NamedTemporaryFile()
+        self.dirpath = tempfile.mkdtemp()
+        path = os.path.join(self.dirpath, 'yksom')
         self.jb = api.Database(
-            path=self.tfile.name, options=(api.WRITE | api.TRUNCATE),
+            path=path, options=(api.WRITE | api.TRUNCATE | api.CREATE),
         )
+
         self.jb.create_collection('yksom')
         self.jb.create_collection('evolyksom')
         self.jb.create_collection('yksomevoli')
+
+    def teardown(self):
+        if self.jb.is_open():
+            self.jb.close()
+        shutil.rmtree(self.dirpath)
 
     def test_name(self):
         assert self.jb['yksom'].name == 'yksom'
@@ -247,9 +277,10 @@ class TestCollection(object):
 class TestCollectionRetrieval(object):
 
     def setup(self):
-        self.tfile = tempfile.NamedTemporaryFile()
+        self.dirpath = tempfile.mkdtemp()
+        path = os.path.join(self.dirpath, 'yksom')
         self.jb = api.Database(
-            path=self.tfile.name, options=(api.WRITE | api.TRUNCATE),
+            path=path, options=(api.WRITE | api.TRUNCATE | api.CREATE),
         )
         self.jb.create_collection('yksom')
         self.coll = self.jb['yksom']
@@ -264,6 +295,11 @@ class TestCollectionRetrieval(object):
         oids = self.coll.insert_many(self.objs)
         for oid, obj in zip(oids, self.objs):
             obj['_id'] = oid
+
+    def teardown(self):
+        if self.jb.is_open():
+            self.jb.close()
+        shutil.rmtree(self.dirpath)
 
     def test_eq(self):
         cur = self.coll.find()
