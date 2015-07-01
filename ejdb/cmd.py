@@ -13,11 +13,16 @@ import standardpaths
 from prompt_toolkit.history import FileHistory
 from prompt_toolkit.shortcuts import get_input
 from ptpython.completer import PythonCompleter
+from pygments import highlight
+from pygments.formatters import Terminal256Formatter
 
 if six.PY3:
-    from pygments.lexers.python import Python3Lexer as PythonLexer
+    from pygments.lexers.python import (
+        Python3Lexer as PythonLexer,
+        Python3TracebackLexer as PythonTracebackLexer,
+    )
 else:
-    from pygments.lexers.python import PythonLexer
+    from pygments.lexers.python import PythonLexer, PythonTracebackLexer
 
 
 standardpaths.configure(application_name='ctypes-ejdb')
@@ -25,9 +30,17 @@ standardpaths.configure(application_name='ctypes-ejdb')
 
 def print_exc(chain=True):
     if six.PY3:
-        traceback.print_exc(chain=chain)
+        rep = traceback.format_exc(chain=chain)
     else:
-        traceback.print_exc()
+        rep = traceback.format_exc()
+    out = highlight(rep, PythonTracebackLexer(), Terminal256Formatter())
+    print(out)
+
+
+def output(thing):
+    rep = pprint.pformat(thing)
+    out = highlight(rep, PythonLexer(), Terminal256Formatter())
+    print(out)
 
 
 def run_repl_loop(db, data_path):
@@ -73,9 +86,9 @@ def run_repl_loop(db, data_path):
         # TODO: Find a better solution for this.
         elif (six.PY3 and hasattr(result, '__next__') or
                 six.PY2 and hasattr(result, 'next')):
-            pprint.pprint([x for x in result])
+            output([x for x in result])
         else:
-            pprint.pprint(result)
+            output(result)
 
 
 @click.command()
