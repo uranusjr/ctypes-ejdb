@@ -27,7 +27,7 @@ class ListIterator(CObjectWrapper):
 
     def __getitem__(self, key):
         if isinstance(key, slice):
-            return [self[i] for i in range(key.indices(len(self)))]
+            return [self[i] for i in range(*key.indices(len(self)))]
         elif isinstance(key, numbers.Number):
             if key >= len(self):
                 raise IndexError('Iterator index out of range.')
