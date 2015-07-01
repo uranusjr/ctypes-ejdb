@@ -26,6 +26,9 @@ readme = open('README.rst').read()
 history = open('HISTORY.rst').read().replace('.. :changelog:', '')
 
 requirements = [
+    'click',
+    'ptpython',
+    'pystandardpaths',
     'six',
 ]
 
@@ -43,6 +46,11 @@ setup(
     author_email='uranusjr@gmail.com',
     url='https://github.com/uranusjr/ctypes-ejdb',
     packages=['ejdb'],
+    entry_points={
+        'console_scripts': [
+            'ejdb=ejdb.cmd:main',
+        ],
+    },
     include_package_data=True,
     install_requires=requirements,
     license='BSD',
