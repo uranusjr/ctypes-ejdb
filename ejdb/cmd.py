@@ -30,6 +30,54 @@ def print_exc(chain=True):
         traceback.print_exc()
 
 
+def run_repl_loop(db, data_path):
+    history = FileHistory(str(data_path / 'history'))
+    glos = {}
+    locs = {'db': db}
+
+    def get_locals():
+        return locs
+
+    def get_globals():
+        return glos
+
+    while True:
+        try:
+            inp = get_input(
+                '>>> ',
+                completer=PythonCompleter(
+                    get_locals=get_locals, get_globals=get_globals,
+                ),
+                history=history, lexer=PythonLexer,
+            )
+        except KeyboardInterrupt:
+            continue
+        except EOFError:
+            break
+
+        result = None
+        try:
+            result = eval(inp, glos, locs)
+        except SyntaxError:
+            try:
+                six.exec_(inp, glos, locs)
+            except:
+                print_exc(chain=False)
+        except:
+            print_exc(chain=False)
+
+        if result is None:
+            pass
+        # HACK: Eval iterators automatically so that find() calls and others
+        # return the result without iterating manually.
+        # TODO: Find a better solution for this.
+        elif (six.PY3 and hasattr(result, '__next__') or
+                six.PY2 and hasattr(result, 'next')):
+            pprint.pprint([x for x in result])
+        else:
+            pprint.pprint(result)
+
+
 @click.command()
 @click.argument('db', type=click.Path(exists=True), metavar='path_to_database')
 @click.option(
@@ -48,44 +96,7 @@ def main(db, lib):
     if not data_path.exists():
         data_path.mkdir(parents=True)
 
-    db = ejdb.Database(path=db, options=(ejdb.WRITE | ejdb.CREATE))
+    with ejdb.Database(path=db, options=(ejdb.WRITE | ejdb.CREATE)) as db:
+        run_repl_loop(db, data_path)
 
-    history = FileHistory(str(data_path / 'history'))
-    while True:
-        try:
-            inp = get_input(
-                '>>> ',
-                completer=PythonCompleter(
-                    get_locals=locals, get_globals=globals,
-                ),
-                history=history, lexer=PythonLexer,
-            )
-        except KeyboardInterrupt:
-            continue
-        except EOFError:
-            break
-
-        result = None
-        try:
-            result = eval(inp, globals(), locals())
-        except SyntaxError:
-            try:
-                six.exec_(inp, globals(), locals())
-            except:
-                print_exc(chain=False)
-        except:
-            print_exc(chain=False)
-
-        if result is None:
-            pass
-        # HACK: Eval iterators automatically so that find() calls and others
-        # return the result without iterating manually.
-        # TODO: Find a better solution for this.
-        elif (six.PY3 and hasattr(result, '__next__') or
-                six.PY2 and hasattr(result, 'next')):
-            pprint.pprint([x for x in result])
-        else:
-            pprint.pprint(result)
-
-    db.close()
     print('Bye!')
