@@ -355,7 +355,7 @@ class Collection(object):
         :param hints: A mapping of possible hints to the selection.
         """
         # TODO: Document hints, implement MongoDB-like hinting kwargs.
-        tclist_p, count = self._find(queries, kwargs, flags=c.JBQRYCOUNT)
+        tclist_p, count = self._execute(queries, kwargs, flags=c.JBQRYCOUNT)
         c.tc.listdel(tclist_p)
         return count
 
