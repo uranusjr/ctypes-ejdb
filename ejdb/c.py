@@ -7,8 +7,9 @@
 from __future__ import absolute_import
 import ctypes
 import ctypes.util
+import os
 
-from .utils import coerce_char_p, python_2_unicode_compatible
+from .utils import coerce_char_p, python_2_unicode_compatible, read_ejdb_config
 
 
 JDBIDKEYNAME = '_id'
@@ -225,8 +226,12 @@ initialized = False
 
 
 def init(ejdb_path=None):
-    if ejdb_path is None:
-        ejdb_path = ctypes.util.find_library('ejdb')
+    ejdb_path = (
+        ejdb_path
+        or os.environ.get('CTYPES_EJDB_PATH')
+        or read_ejdb_config()
+        or ctypes.util.find_library('ejdb')
+    )
 
     # Access to the C library.
     _ = ctypes.cdll.LoadLibrary(ejdb_path)

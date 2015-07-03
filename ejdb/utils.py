@@ -2,9 +2,15 @@
 # -*- coding: utf-8 -*-
 
 import collections
+import os
 import weakref
 
 import six
+
+try:
+    from configparser import ConfigParser
+except ImportError:     # Python 2.
+    from ConfigParser import SafeConfigParser as ConfigParser
 
 
 # Keeps a reference to all wrapper instances so that we can dealloc them when
@@ -47,6 +53,32 @@ class PrettyOrderedDict(collections.OrderedDict):
     @six.moves.reprlib.recursive_repr()
     def __repr__(self):
         return dict.__repr__(self)
+
+
+def get_package_root():
+    cur = os.path.abspath(__file__)
+    while True:
+        name = os.path.basename(cur)
+        if name == 'ejdb':
+            return cur
+        elif not name:
+            return ''
+        cur = os.path.dirname(cur)
+
+
+def read_ejdb_config():
+    root = get_package_root()
+    if not root:
+        return None
+    config_path = os.path.join(root, 'ejdb.cfg')
+    if not os.path.exists(config_path):
+        return None
+    parser = ConfigParser()
+    parser.read([os.path.expanduser('~/.ejdb.cfg'), config_path])
+    try:
+        return parser['ejdb']['path']
+    except KeyError:
+        return None
 
 
 def python_2_unicode_compatible(klass):
