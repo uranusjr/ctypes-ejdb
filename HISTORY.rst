@@ -3,6 +3,15 @@
 History
 =======
 
+0.3.1 (2015-07-03)
+---------------------
+
+* Fixed context manager usage opening a ``Database``.
+* Fixed attribute error in ``Collection.count``.
+* Fixed document iterator slicing.
+* Experimental CLI utility ``ejdb.cli`` based on Click and ptpython.
+
+
 0.3 (2015-07-01)
 ---------------------
 

@@ -48,7 +48,7 @@ setup(
     packages=['ejdb'],
     entry_points={
         'console_scripts': [
-            'ejdb=ejdb.cmd:main',
+            'ejdb.cli=ejdb.cmd:main',
         ],
     },
     include_package_data=True,
