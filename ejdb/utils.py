@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import collections
 import weakref
 
 import six
@@ -38,6 +39,14 @@ class CObjectWrapper(object):
         ref.wrapped = wrapped
         ref.finalizer = finalizer
         _tracked_refs[id(ref)] = ref
+
+
+class PrettyOrderedDict(collections.OrderedDict):
+    """OrderedDict functionality with dict appearance.
+    """
+    @six.moves.reprlib.recursive_repr()
+    def __repr__(self):
+        return dict.__repr__(self)
 
 
 def python_2_unicode_compatible(klass):

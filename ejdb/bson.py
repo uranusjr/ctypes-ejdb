@@ -13,7 +13,7 @@ import uuid
 import six
 
 from . import c
-from .utils import CObjectWrapper, coerce_char_p, coerce_str
+from .utils import CObjectWrapper, PrettyOrderedDict, coerce_char_p, coerce_str
 
 
 HASH = type(hashlib.md5())
@@ -282,7 +282,7 @@ def _bson_decode_array_contents(subiter):
 
 
 def _bson_decode_object_contents(subiter):
-    subitems = collections.OrderedDict()
+    subitems = PrettyOrderedDict()
     while True:
         value_type = c.bson.iterator_next(subiter)
         if value_type == c.BSON_EOO:
