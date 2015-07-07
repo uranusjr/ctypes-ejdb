@@ -718,7 +718,7 @@ class Database(CObjectWrapper):
         ejcollopts = c.EJCOLLOPTS(**options)
         wrapped = c.ejdb.createcoll(self._wrapped, c_name, ejcollopts)
         if not wrapped:     # pragma: no cover
-            raise DatabaseError(_get_errmsg(self.database))
+            raise DatabaseError(_get_errmsg(self))
         return Collection(database=self, wrapped=wrapped)
 
     def drop_collection(self, name, unlink=True):
@@ -733,7 +733,7 @@ class Database(CObjectWrapper):
         c_name = coerce_char_p(name)
         ok = c.ejdb.rmcoll(self._wrapped, c_name, unlink)
         if not ok:  # pragma: no cover
-            raise DatabaseError(_get_errmsg(self.database))
+            raise DatabaseError(_get_errmsg(self))
 
     def get_collection(self, name):
         """Get the collection with name `name` inside this EJDB.
