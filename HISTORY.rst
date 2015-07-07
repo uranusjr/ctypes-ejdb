@@ -3,6 +3,14 @@
 History
 =======
 
+0.3.2 (2015-07-07)
+---------------------
+
+* Fix attribute lookup in ``DatabaseError`` construction.
+* Add options to config EJDB path by environ or ``.cfg`` file.
+* Make document repr look like a dict so it prints better.
+
+
 0.3.1 (2015-07-03)
 ---------------------
 
