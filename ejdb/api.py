@@ -278,11 +278,6 @@ class Collection(object):
             raise DatabaseError(_get_errmsg(self.database))
         return oid
 
-    def _remove(self, oid):
-        ok = c.ejdb.rmbson(self._wrapped, oid)
-        if not ok:
-            raise DatabaseError(_get_errmsg(self.database))
-
     def _insert(self, document):
         try:
             doc_id = _get_id(document)
@@ -459,7 +454,9 @@ class Collection(object):
         if not is_valid_oid(oid):
             raise ValueError('OID should be a 24-character-long hex string.')
         oid = c.BSONOID.from_string(oid)
-        self._remove(oid)
+        ok = c.ejdb.rmbson(self._wrapped, oid)
+        if not ok:
+            raise DatabaseError(_get_errmsg(self.database))
 
     def create_index(self, path, index_type):
         _set_index(self, 'add', path, index_type)
