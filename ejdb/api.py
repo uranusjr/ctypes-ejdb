@@ -398,7 +398,8 @@ class Collection(object):
 
         Delete a single document in the collection.
 
-        This is an optimized shortcut for `find_one({..., '$dropall': True})`.
+        This is an optimized shortcut for
+        `find_one(*queries, hints={..., '$dropall': True})`.
         Use the formal syntax if you want to get the deleted document's
         content.
 
@@ -416,12 +417,13 @@ class Collection(object):
 
         Delete documents in the collection.
 
-        This is an optimized shortcut for `find({..., '$dropall': True})`.
+        This is an optimized shortcut for
+        `find(*queries, hints={..., '$dropall': True})`.
         Use the formal syntax if you want to get the content of deleted
         documents.
 
         :param hints: A mapping of possible hints to the selection.
-        :returns: A boolean specifying whether a document is deleted.
+        :returns: Count of documents deleted.
         """
         hints = kwargs.pop('hints', {})
         tclist_p, count = self._execute(queries, hints, flags=c.JBQRYCOUNT)
