@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-VERSION = (0, 3, 2,)
+VERSION = (0, 3, 3,)
 
 __author__ = 'Tzu-ping Chung'
 __email__ = 'uranusjr@gmail.com'
