@@ -47,10 +47,46 @@ class CObjectWrapper(object):
         _tracked_refs[id(ref)] = ref
 
 
+if six.PY3:
+    recursive_repr = six.moves.reprlib.recursive_repr
+else:
+    from thread import get_ident
+
+    def recursive_repr(fillvalue='...'):
+        """Decorator to make a repr function return fillvalue for a recursive
+        call.
+
+        Copied from Python 3 stdlib's `Lib/reprlib.py`.
+        """
+
+        def decorating_function(func):
+            repr_running = set()
+
+            def wrapper(self):
+                key = id(self), get_ident()
+                if key in repr_running:
+                    return fillvalue
+                repr_running.add(key)
+                try:
+                    result = func(self)
+                finally:
+                    repr_running.discard(key)
+                return result
+
+            # Can't use functools.wraps() here because of bootstrap issues
+            wrapper.__module__ = getattr(func, '__module__')
+            wrapper.__doc__ = getattr(func, '__doc__')
+            wrapper.__name__ = getattr(func, '__name__')
+            wrapper.__annotations__ = getattr(func, '__annotations__', {})
+            return wrapper
+
+        return decorating_function
+
+
 class PrettyOrderedDict(collections.OrderedDict):
     """OrderedDict functionality with dict appearance.
     """
-    @six.moves.reprlib.recursive_repr()
+    @recursive_repr()
     def __repr__(self):
         return dict.__repr__(self)
 
