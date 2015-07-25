@@ -8,9 +8,6 @@ ctypes-ejdb
 .. image:: https://travis-ci.org/uranusjr/ctypes-ejdb.png?branch=master
     :target: https://travis-ci.org/uranusjr/ctypes-ejdb
 
-.. image:: https://pypip.in/d/ctypes-ejdb/badge.png
-    :target: https://pypi.python.org/pypi/ctypes-ejdb
-
 
 Python binding for EJDB built on ctypes.
 
