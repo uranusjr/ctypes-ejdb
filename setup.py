@@ -26,11 +26,16 @@ readme = open('README.rst').read()
 history = open('HISTORY.rst').read().replace('.. :changelog:', '')
 
 requirements = [
-    'click',
-    'ptpython',
     'pystandardpaths',
     'six',
 ]
+
+extras_requirements = {
+    'cli': [
+        'click',
+        'ptpython',
+    ],
+}
 
 test_requirements = [
     'pytest',
@@ -45,14 +50,15 @@ setup(
     author='Tzu-ping Chung',
     author_email='uranusjr@gmail.com',
     url='https://github.com/uranusjr/ctypes-ejdb',
-    packages=['ejdb'],
+    packages=['ejdb', 'ejdb/cmd'],
     entry_points={
         'console_scripts': [
-            'ejdb.cli=ejdb.cmd:main',
+            'ejdb.cli = ejdb.cmd:main',
         ],
     },
     include_package_data=True,
     install_requires=requirements,
+    extras_require=extras_requirements,
     license='BSD',
     zip_safe=False,
     keywords='ctypes-ejdb',

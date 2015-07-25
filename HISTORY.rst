@@ -3,6 +3,12 @@
 History
 =======
 
+0.4 (2015-07-25)
+---------------------
+
+* Move command line interface dependencies to extras. New installations now needs to run ``pip install ctypes-ejdb[cli]`` to install it. This is better for those who want only the core library.
+
+
 0.3.3 (2015-07-24)
 ---------------------
 
