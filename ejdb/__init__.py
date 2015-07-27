@@ -10,7 +10,7 @@ __version__ = '.'.join(str(v) for v in VERSION)
 
 from .api import (      # noqa
     CollectionDoesNotExist, DatabaseError, TransactionError, OperationError,
-    READ, WRITE, CREATE, TRUNCATE, NOLOCK, SYNC,
+    READ, WRITE, CREATE, TRUNCATE, NOLOCK, NOBLOCK, SYNC,
     STRING, ISTRING, NUMBER, ARRAY,
     get_ejdb_version, is_valid_oid, Collection, Database,
 )
