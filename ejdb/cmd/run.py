@@ -65,7 +65,7 @@ def run_repl_loop(db, data_path):
             )
         except KeyboardInterrupt:
             continue
-        except EOFError:
+        except (EOFError, SystemExit):
             break
 
         result = None
