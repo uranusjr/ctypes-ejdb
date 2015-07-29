@@ -65,7 +65,7 @@ def run_repl_loop(db, data_path):
             )
         except KeyboardInterrupt:
             continue
-        except (EOFError, SystemExit):
+        except EOFError:
             break
 
         result = None
@@ -76,6 +76,8 @@ def run_repl_loop(db, data_path):
                 six.exec_(inp, glos, locs)
             except:
                 print_exc(chain=False)
+        except SystemExit:
+            break
         except:
             print_exc(chain=False)
 
