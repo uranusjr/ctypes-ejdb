@@ -337,7 +337,7 @@ class Collection(object):
         )
         count = ctypes.c_uint32()
         tclist_p = c.ejdb.qryexecute(
-            self._wrapped, ejq, ctypes.byref(count), 0, c.TCXSTRREF(0),
+            self._wrapped, ejq, ctypes.byref(count), flags, c.TCXSTRREF(0),
         )
         c.ejdb.querydel(ejq)
         return tclist_p, count.value
