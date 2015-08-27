@@ -26,7 +26,6 @@ readme = open('README.rst').read()
 history = open('HISTORY.rst').read().replace('.. :changelog:', '')
 
 requirements = [
-    'pystandardpaths',
     'six',
 ]
 
@@ -34,6 +33,7 @@ extras_requirements = {
     'cli': [
         'click',
         'ptpython',
+        'pystandardpaths',
     ],
 }
 
