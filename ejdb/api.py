@@ -200,6 +200,9 @@ class Collection(object):
         self._database = database
         self._wrapped = wrapped
 
+    def __repr__(self):
+        return '<Collection {name}>'.format(name=self.name)
+
     @property
     def database(self):
         """The :class:`Database` instance this collection belongs to.
@@ -539,10 +542,8 @@ class CollectionIterator(tc.ListIterator):
         self._database = database
 
     def instantiate(self, value_p):
-        return Collection(
-            database=self._database,
-            wrapped=ctypes.cast(value_p, c.EJCOLLREF),
-        )
+        name = coerce_str(ctypes.cast(value_p, c.EJCOLLREF).contents.cname)
+        return self._database.get_collection(name)
 
 
 class Database(CObjectWrapper):
@@ -621,6 +622,10 @@ class Database(CObjectWrapper):
         if self.is_open():
             raise DatabaseError('Could not set options to an open database.')
         self._options = options
+
+    @property
+    def collections(self):
+        return {collection for collection in self}
 
     # def version(self):
     #     """Get format version of the current database.
