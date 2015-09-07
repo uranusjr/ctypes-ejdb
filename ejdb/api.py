@@ -392,8 +392,7 @@ class Collection(object):
 
         Delete a single document in the collection.
 
-        This is an optimized shortcut for
-        `find_one(*queries, hints={..., '$dropall': True})`.
+        This is an optimized shortcut for `find_one({..., '$dropall': True})`.
         Use the formal syntax if you want to get the deleted document's
         content.
 
@@ -412,8 +411,7 @@ class Collection(object):
 
         Delete documents in the collection.
 
-        This is an optimized shortcut for
-        `find(*queries, hints={..., '$dropall': True})`.
+        This is an optimized shortcut for `find({..., '$dropall': True})`.
         Use the formal syntax if you want to get the content of deleted
         documents.
 
