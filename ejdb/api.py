@@ -313,12 +313,11 @@ class Collection(object):
             ]
         return ids
 
-    def _execute(self, queries, hints, flags):
+    def _execute(self, queries, hints, flags, query_items=None):
+        query = query_items or {}
         if queries:
-            query = queries[0]
+            query.update({k: v for k, v in queries[0].items()})
             queries = queries[1:]
-        else:
-            query = {}
         query_bs = bson.encode(query, as_query=True)
         hints = bson.encode(hints, as_query=True)
 
@@ -404,6 +403,7 @@ class Collection(object):
         hints = kwargs.pop('hints', {})
         tclist_p, count = self._execute(
             queries, hints, flags=(c.JBQRYFINDONE | c.JBQRYCOUNT),
+            query_items={'$dropall': True},
         )
         return bool(count)
 
@@ -421,7 +421,10 @@ class Collection(object):
         :returns: Count of documents deleted.
         """
         hints = kwargs.pop('hints', {})
-        tclist_p, count = self._execute(queries, hints, flags=c.JBQRYCOUNT)
+        tclist_p, count = self._execute(
+            queries, hints, flags=c.JBQRYCOUNT,
+            query_items={'$dropall': True},
+        )
         return count
 
     def save(self, *documents, **kwargs):
