@@ -3,6 +3,12 @@
 History
 =======
 
+0.4.5 (2015-09-07)
+---------------------
+
+* Fix ``Collection.delete_one`` and ``Collection.delete_many``.
+
+
 0.4.4 (2015-07-30)
 ---------------------
 
