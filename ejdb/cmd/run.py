@@ -94,7 +94,7 @@ def run_repl_loop(db, data_path):
 
 
 @click.command()
-@click.argument('db', type=click.Path(exists=True), metavar='path_to_database')
+@click.argument('db', type=click.Path(), metavar='path_to_database')
 @click.option(
     'lib', '--ejdb', type=click.Path(exists=True), default=None,
     help='(Optional) Path to EJDB C library.',
