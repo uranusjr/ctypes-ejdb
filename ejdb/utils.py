@@ -8,9 +8,9 @@ import weakref
 import six
 
 try:
-    from configparser import ConfigParser
+    from configparser import ConfigParser, NoSectionError, NoOptionError
 except ImportError:     # Python 2.
-    from ConfigParser import SafeConfigParser as ConfigParser
+    from ConfigParser import SafeConfigParser as ConfigParser, NoSectionError, NoOptionError
 
 
 # Keeps a reference to all wrapper instances so that we can dealloc them when
@@ -112,8 +112,8 @@ def read_ejdb_config():
     parser = ConfigParser()
     parser.read([os.path.expanduser('~/.ejdb.cfg'), config_path])
     try:
-        return parser['ejdb']['path']
-    except KeyError:
+        return parser.get('ejdb', 'path')
+    except NoSectionError, NoOptionError:
         return None
 
 
