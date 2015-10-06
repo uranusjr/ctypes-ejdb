@@ -3,6 +3,20 @@
 History
 =======
 
+0.4.6 (2015-10-06)
+---------------------
+
+* Fix Python 2 compatibility regarding `ejdb.cfg` usage.
+* Fix segmentation fault when trying to reuse collection instances retrieved
+  from iterating through a database.
+* ``ejdb.cli`` now creates a non-existent database if the path given does not
+  exist.
+* Add a more meaningful error message when the EJDB binary path is not
+  configured properly.
+* Fix documentation on `Collection.delete_one()` and
+  `Collection.delete_many()`.
+
+
 0.4.5 (2015-09-07)
 ---------------------
 
