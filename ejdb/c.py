@@ -232,7 +232,7 @@ def init(ejdb_path=None):
         or read_ejdb_config()
         or ctypes.util.find_library('ejdb')
     )
-    
+
     if not ejdb_path:
         raise RuntimeError('EJDB binary not found')
 
