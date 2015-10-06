@@ -113,7 +113,7 @@ def read_ejdb_config():
     parser.read([os.path.expanduser('~/.ejdb.cfg'), config_path])
     try:
         return parser.get('ejdb', 'path')
-    except NoSectionError, NoOptionError:
+    except (NoSectionError, NoOptionError):
         return None
 
 
