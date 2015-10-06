@@ -1,5 +1,7 @@
 # Config file for automatic testing at travis-ci.org
 
+sudo: true
+
 language: python
 
 python:
@@ -10,7 +12,11 @@ python:
   - "pypy"
 
 # command to install dependencies, e.g. pip install -r requirements.txt --use-mirrors
-install: pip install -r requirements.txt
+install:
+    - sudo add-apt-repository ppa:adamansky/ejdb -y
+    - sudo apt-get update -qq
+    - sudo apt-get install ejdb -qqy
+    - pip install -r requirements.txt
 
 # command to run tests, e.g. python setup.py test
 script: py.test
