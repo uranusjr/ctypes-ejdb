@@ -16,15 +16,19 @@ class DatabaseError(Exception):
     pass
 
 
-class CollectionDoesNotExist(KeyError):
+class CollectionDoesNotExist(KeyError, DatabaseError):
     pass
 
 
-class TransactionError(Exception):
+class CommandError(ValueError, DatabaseError):
     pass
 
 
-class OperationError(Exception):
+class TransactionError(DatabaseError):
+    pass
+
+
+class OperationError(DatabaseError):
     pass
 
 
@@ -322,7 +326,7 @@ class Collection(object):
             query.update({k: v for k, v in queries[0].items()})
             queries = queries[1:]
         query_bs = bson.encode(query, as_query=True)
-        hints = bson.encode(hints, as_query=True)
+        hints_bs = bson.encode(hints, as_query=True)
 
         extra_query_count = len(queries)
         if extra_query_count:
@@ -335,8 +339,15 @@ class Collection(object):
 
         ejq = c.ejdb.createquery(
             self._database._wrapped, query_bs._wrapped,
-            extra_query_bs_array, extra_query_count, hints._wrapped,
+            extra_query_bs_array, extra_query_count, hints_bs._wrapped,
         )
+        if ejq is None:
+            queries = (query,) + queries
+            raise CommandError(
+                'Could not build query from {qs} with hints {hs}.'.format(
+                    qs=queries, hs=hints,
+                )
+            )
         count = ctypes.c_uint32()
         tclist_p = c.ejdb.qryexecute(
             self._wrapped, ejq, ctypes.byref(count), flags, c.TCXSTRREF(0),

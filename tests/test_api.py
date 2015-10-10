@@ -311,6 +311,10 @@ class TestCollectionRetrieval(object):
         for i, obj in enumerate(self.coll.find()):
             assert dict(obj) == self.objs[i]
 
+    def test_find_all_invalid(self):
+        with pytest.raises(api.CommandError):
+            self.coll.find({'one': 1, '$bobo': None})
+
     def test_find_with_query(self):
         objs = self.coll.find({'one': 1})
         assert len(objs) == 1
