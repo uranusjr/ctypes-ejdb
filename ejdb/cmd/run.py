@@ -94,6 +94,12 @@ def run_repl_loop(db, data_path):
 
 
 @click.command()
+@click.version_option(
+    version=ejdb.__version__,
+    message='ctypes-ejdb %(version)s (EJDB {ejdbver})'.format(
+        ejdbver=ejdb.get_ejdb_version(),
+    ),
+)
 @click.argument('db', type=click.Path(), metavar='path_to_database')
 @click.option(
     'lib', '--ejdb', type=click.Path(exists=True), default=None,
