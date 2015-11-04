@@ -634,6 +634,10 @@ class Database(CObjectWrapper):
         self._options = options
 
     @property
+    def writable(self):
+        return bool(self.options & WRITE)
+
+    @property
     def collections(self):
         return {collection for collection in self}
 

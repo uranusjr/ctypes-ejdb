@@ -84,6 +84,14 @@ class TestDatabaseInvalid(object):
             jb.open()
         assert str(ctx.value) == 'File not found.'
 
+    def test_writable(self):
+        jb = api.Database(path='')
+        assert not jb.writable
+
+    def test_not_writable(self):
+        jb = api.Database(path='', options=api.WRITE)
+        assert jb.writable
+
 
 class TestDatabaseInit(object):
 
