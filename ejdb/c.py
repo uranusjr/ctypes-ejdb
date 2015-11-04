@@ -233,7 +233,7 @@ def init(ejdb_path=None):
         or ctypes.util.find_library('ejdb')
     )
 
-    if not ejdb_path:
+    if not ejdb_path:   # pragma: no cover
         raise RuntimeError('EJDB binary not found')
 
     # Access to the C library.

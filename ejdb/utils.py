@@ -7,10 +7,12 @@ import weakref
 
 import six
 
-try:
+try:    # pragma: no cover
     from configparser import ConfigParser, NoSectionError, NoOptionError
-except ImportError:     # Python 2.
-    from ConfigParser import SafeConfigParser as ConfigParser, NoSectionError, NoOptionError
+except ImportError:     # Python 2.     # pragma: no cover
+    from ConfigParser import (
+        SafeConfigParser as ConfigParser, NoSectionError, NoOptionError
+    )
 
 
 # Keeps a reference to all wrapper instances so that we can dealloc them when
@@ -47,9 +49,9 @@ class CObjectWrapper(object):
         _tracked_refs[id(ref)] = ref
 
 
-if six.PY3:
+if six.PY3:     # pragma: no cover
     recursive_repr = six.moves.reprlib.recursive_repr
-else:
+else:           # pragma: no cover
     from thread import get_ident
 
     def recursive_repr(fillvalue='...'):
@@ -117,7 +119,7 @@ def read_ejdb_config():
         return None
 
 
-def python_2_unicode_compatible(klass):
+def python_2_unicode_compatible(klass):     # pragma: no cover
     """A decorator that defines __unicode__ and __str__ methods under Python 2.
     Under Python 3 it does nothing.
 
