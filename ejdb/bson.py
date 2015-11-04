@@ -180,7 +180,7 @@ def _bson_decode_binary(bsiter):
     subtype = c.bson.iterator_bin_type(bsiter)
     try:
         subdecoder = _BIN_SUBTYPE_DECODERS[subtype]
-    except KeyError:
+    except KeyError:    # pragma: no cover
         raise BSONDecodeError(
             'Could not decode binary with key {key} of type {subtype}'.format(
                 key=coerce_str(c.bson.iterator_key(bsiter)),
@@ -191,14 +191,6 @@ def _bson_decode_binary(bsiter):
     data_p = c.bson.iterator_bin_data(bsiter)
     data = ctypes.string_at(data_p, size=size)
     return subdecoder(data)
-
-
-def _bson_decode_binary_uuid(data):
-    return uuid.UUID(bytes=data)
-
-
-def _bson_decode_binary_md5(data):
-    return MD5(data)
 
 
 _TYPE_DECODERS = {
@@ -240,8 +232,8 @@ _TYPE_NAMES = [
 
 _BIN_SUBTYPE_DECODERS = {
     c.BSON_BIN_BINARY: lambda data: data,
-    c.BSON_BIN_UUID: _bson_decode_binary_uuid,
-    c.BSON_BIN_MD5: _bson_decode_binary_md5,
+    c.BSON_BIN_UUID: lambda data: uuid.UUID(bytes=data),
+    c.BSON_BIN_MD5: MD5,
 }
 
 _BIN_SUBTYPE_NAMES = [
@@ -271,7 +263,7 @@ def _bson_decode_array_contents(subiter):
             raise BSONDecodeError
         try:
             decoder = _TYPE_DECODERS[value_type]
-        except KeyError:
+        except KeyError:    # pragma: no cover
             raise BSONDecodeError(
                 'Could not decode object with key {key} of type {type}'.format(
                     key=key, type=_TYPE_NAMES[value_type],
@@ -290,7 +282,7 @@ def _bson_decode_object_contents(subiter):
         key = coerce_str(c.bson.iterator_key(subiter))
         try:
             decoder = _TYPE_DECODERS[value_type]
-        except KeyError:
+        except KeyError:    # pragma: no cover
             raise BSONDecodeError(
                 'Could not decode object with key {key} of type {type}'.format(
                     key=key, type=_TYPE_NAMES[value_type],
@@ -361,6 +353,4 @@ def encode(obj, as_query=False):
 
 
 def decode(bs):
-    if not isinstance(bs, BSON):
-        bs = BSON(bs)
     return bs.decode()

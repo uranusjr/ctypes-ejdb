@@ -33,6 +33,12 @@ else:
         assert str(ctx.value) == "Could not encode object 'msyok'."
 
 
+def test_bson_decode():
+    data = {'answer': '42'}
+    bs = bson.encode(data)
+    assert bson.decode(bs) == data
+
+
 def test_bson_eq():
     bs = bson.encode({'answer': '42'})
     assert bs == bs
@@ -184,3 +190,13 @@ def test_bson_unrecognized():
     with pytest.raises(bson.BSONEncodeError) as ctx:
         bson.encode({'thing': Thing()})
     assert str(ctx.value) == 'Could not encode object Thing.'
+
+
+def test_bson_decode_error_message():
+    with pytest.raises(bson.BSONDecodeError) as ctx:
+        raise bson.BSONDecodeError()
+    assert str(ctx.value) == 'Could not decode BSON object.'
+
+    with pytest.raises(bson.BSONDecodeError) as ctx:
+        raise bson.BSONDecodeError('msyok')
+    assert str(ctx.value) == 'msyok'
