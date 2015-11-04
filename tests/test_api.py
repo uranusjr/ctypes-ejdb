@@ -54,7 +54,7 @@ class TestDatabaseInvalid(object):
         """Construction is automatic if we give the `CREATE` flag.
         """
         dirpath = tempfile.mkdtemp()
-        path = os.path.join(dirpath, 'yksom')
+        path = os.path.join(dirpath, 'msyok')
         assert not os.path.exists(path)
         jb = api.Database(path=path, options=(api.WRITE | api.CREATE))
         jb.close()
@@ -91,7 +91,7 @@ class TestDatabaseInit(object):
         """Setup a temp database for read-only tests.
         """
         self.dirpath = tempfile.mkdtemp()
-        path = os.path.join(self.dirpath, 'yksom')
+        path = os.path.join(self.dirpath, 'msyok')
         assert not os.path.exists(path)
         self.path = path
         if not isinstance(path, six.binary_type):
@@ -143,7 +143,7 @@ class TestDatabaseInit(object):
         assert isinstance(self.jb.path, six.string_types)
         assert self.jb.path == self.path
         with pytest.raises(api.DatabaseError) as ctx:
-            self.jb.path = 'yksom'
+            self.jb.path = 'msyok'
         assert str(ctx.value) == 'Could not set path to an open database.'
 
     def test_option_setter_opened(self):
@@ -162,7 +162,7 @@ class TestDatabase(object):
         """Create a database for testing.
         """
         self.dirpath = tempfile.mkdtemp()
-        path = os.path.join(self.dirpath, 'yksom')
+        path = os.path.join(self.dirpath, 'msyok')
         self.jb = api.Database(
             path=path, options=(api.WRITE | api.TRUNCATE | api.CREATE),
         )
@@ -174,76 +174,76 @@ class TestDatabase(object):
 
     if six.PY2:
         def test_get_collection(self):
-            c.ejdb.createcoll(self.jb._wrapped, b'yksom', byref(c.EJCOLLOPTS()))
-            assert self.jb.get_collection('yksom')
+            c.ejdb.createcoll(self.jb._wrapped, b'msyok', byref(c.EJCOLLOPTS()))
+            assert self.jb.get_collection('msyok')
             with pytest.raises(api.CollectionDoesNotExist) as ctx:
-                self.jb.get_collection('yksomevoli')
-            assert str(ctx.value) == "u'yksomevoli'"
+                self.jb.get_collection('msyokevoli')
+            assert str(ctx.value) == "u'msyokevoli'"
 
         def test_getitem(self):
-            c.ejdb.createcoll(self.jb._wrapped, b'yksom', byref(c.EJCOLLOPTS()))
-            assert self.jb.get_collection('yksom')
+            c.ejdb.createcoll(self.jb._wrapped, b'msyok', byref(c.EJCOLLOPTS()))
+            assert self.jb.get_collection('msyok')
             with pytest.raises(KeyError) as ctx:
-                self.jb['yksomevoli']
-            assert str(ctx.value) == "u'yksomevoli'"
+                self.jb['msyokevoli']
+            assert str(ctx.value) == "u'msyokevoli'"
     else:
         def test_get_collection(self):
-            c.ejdb.createcoll(self.jb._wrapped, b'yksom', byref(c.EJCOLLOPTS()))
-            assert self.jb.get_collection('yksom')
+            c.ejdb.createcoll(self.jb._wrapped, b'msyok', byref(c.EJCOLLOPTS()))
+            assert self.jb.get_collection('msyok')
             with pytest.raises(api.CollectionDoesNotExist) as ctx:
-                self.jb.get_collection('yksomevoli')
-            assert str(ctx.value) == "'yksomevoli'"
+                self.jb.get_collection('msyokevoli')
+            assert str(ctx.value) == "'msyokevoli'"
 
         def test_getitem(self):
-            c.ejdb.createcoll(self.jb._wrapped, b'yksom', byref(c.EJCOLLOPTS()))
-            assert self.jb.get_collection('yksom')
+            c.ejdb.createcoll(self.jb._wrapped, b'msyok', byref(c.EJCOLLOPTS()))
+            assert self.jb.get_collection('msyok')
             with pytest.raises(KeyError) as ctx:
-                self.jb['yksomevoli']
-            assert str(ctx.value) == "'yksomevoli'"
+                self.jb['msyokevoli']
+            assert str(ctx.value) == "'msyokevoli'"
 
     def test_create_collection(self):
-        assert not c.ejdb.getcoll(self.jb._wrapped, b'yksom')
-        self.jb.create_collection('yksom')
-        assert c.ejdb.getcoll(self.jb._wrapped, b'yksom')
+        assert not c.ejdb.getcoll(self.jb._wrapped, b'msyok')
+        self.jb.create_collection('msyok')
+        assert c.ejdb.getcoll(self.jb._wrapped, b'msyok')
 
         with pytest.raises(api.DatabaseError) as ctx:
-            self.jb.create_collection('yksom')
-        assert str(ctx.value) == "Collection with name 'yksom' already exists."
+            self.jb.create_collection('msyok')
+        assert str(ctx.value) == "Collection with name 'msyok' already exists."
 
-        self.jb.create_collection('yksom', exist_ok=True)
+        self.jb.create_collection('msyok', exist_ok=True)
 
     def test_has_collection(self):
-        assert self.jb.has_collection('yksom') is False
-        self.jb.create_collection('yksom')
-        assert self.jb.has_collection('yksom') is True
+        assert self.jb.has_collection('msyok') is False
+        self.jb.create_collection('msyok')
+        assert self.jb.has_collection('msyok') is True
 
     def test_contains(self):
-        assert 'yksom' not in self.jb
-        self.jb.create_collection('yksom')
-        assert 'yksom' in self.jb
+        assert 'msyok' not in self.jb
+        self.jb.create_collection('msyok')
+        assert 'msyok' in self.jb
 
     def test_drop_collection(self):
-        self.jb.create_collection('yksom')
-        assert 'yksom' in self.jb
-        self.jb.drop_collection('yksom')
-        assert 'yksom' not in self.jb
+        self.jb.create_collection('msyok')
+        assert 'msyok' in self.jb
+        self.jb.drop_collection('msyok')
+        assert 'msyok' not in self.jb
 
         # Dropping a non-existent collection is NOOP.
-        self.jb.drop_collection('yksom')
+        self.jb.drop_collection('msyok')
 
 
 class TestCollection(object):
 
     def setup(self):
         self.dirpath = tempfile.mkdtemp()
-        path = os.path.join(self.dirpath, 'yksom')
+        path = os.path.join(self.dirpath, 'msyok')
         self.jb = api.Database(
             path=path, options=(api.WRITE | api.TRUNCATE | api.CREATE),
         )
 
-        self.jb.create_collection('yksom')
-        self.jb.create_collection('evolyksom')
-        self.jb.create_collection('yksomevoli')
+        self.jb.create_collection('msyok')
+        self.jb.create_collection('evolmsyok')
+        self.jb.create_collection('msyokevoli')
 
     def teardown(self):
         if self.jb.is_open():
@@ -251,7 +251,7 @@ class TestCollection(object):
         shutil.rmtree(self.dirpath)
 
     def test_name(self):
-        assert self.jb['yksom'].name == 'yksom'
+        assert self.jb['msyok'].name == 'msyok'
 
     def test_database_iter(self):
         i = 0
@@ -263,27 +263,23 @@ class TestCollection(object):
         assert len(self.jb) == 3
 
     def test_save(self):
-        coll = self.jb['yksom']
+        coll = self.jb['msyok']
         document = {'category': '♥', 'name': 'Mosky'}
         coll.save(document)
         assert re.match(r'^[0-9a-fA-F]{24}$', document['_id']) is not None
         # TODO: Check the collection content (using only C API).
-
-    def test_insert_many(self):
-        # TODO: Implement me.
-        pass
 
 
 class TestCollectionRetrieval(object):
 
     def setup(self):
         self.dirpath = tempfile.mkdtemp()
-        path = os.path.join(self.dirpath, 'yksom')
+        path = os.path.join(self.dirpath, 'msyok')
         self.jb = api.Database(
             path=path, options=(api.WRITE | api.TRUNCATE | api.CREATE),
         )
-        self.jb.create_collection('yksom')
-        self.coll = self.jb['yksom']
+        self.jb.create_collection('msyok')
+        self.coll = self.jb['msyok']
 
         self.objs = [
             {'order': 4, 'one': 1},

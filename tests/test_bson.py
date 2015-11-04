@@ -16,21 +16,21 @@ from ejdb import bson
 if six.PY2:
     def test_bson_invalid():
         with pytest.raises(bson.BSONEncodeError) as ctx:
-            bson.encode(['yksom'])
-        assert str(ctx.value) == "Could not encode object [u'yksom']."
+            bson.encode(['msyok'])
+        assert str(ctx.value) == "Could not encode object [u'msyok']."
 
         with pytest.raises(bson.BSONEncodeError) as ctx:
-            bson.encode('yksom')
-        assert str(ctx.value) == "Could not encode object u'yksom'."
+            bson.encode('msyok')
+        assert str(ctx.value) == "Could not encode object u'msyok'."
 else:
     def test_bson_invalid():
         with pytest.raises(bson.BSONEncodeError) as ctx:
-            bson.encode(['yksom'])
-        assert str(ctx.value) == "Could not encode object ['yksom']."
+            bson.encode(['msyok'])
+        assert str(ctx.value) == "Could not encode object ['msyok']."
 
         with pytest.raises(bson.BSONEncodeError) as ctx:
-            bson.encode('yksom')
-        assert str(ctx.value) == "Could not encode object 'yksom'."
+            bson.encode('msyok')
+        assert str(ctx.value) == "Could not encode object 'msyok'."
 
 
 def test_bson_eq():
@@ -120,12 +120,12 @@ def test_bson_uuid():
 
 
 def test_bson_md5():
-    m = hashlib.md5(b'yksom')
+    m = hashlib.md5(b'msyok')
     bs = bson.encode({'md5': m})
     assert (
         bs ==
-        b'\x1f\x00\x00\x00\x05md5\x00\x10\x00\x00\x00\x05$#\x05\x064\x02\xd4p'
-        b'\xb6\xe2-\xa6\x17\xdd\xa85\x00'
+        b'\x1f\x00\x00\x00\x05md5\x00\x10\x00\x00\x00\x05\x80\xbf\x9c\xff\x7f'
+        b'\\\xc3\xf2\x18n\x9d\xc8\xf0\xc3\xd5\xf3\x00'
     )
     obj = bs.decode()
     assert list(obj.keys()) == ['md5']
@@ -133,13 +133,13 @@ def test_bson_md5():
 
 
 def test_bson_md5_custom():
-    hashm = hashlib.md5(b'yksom')
+    hashm = hashlib.md5(b'msyok')
     m = bson.MD5(hashm.digest())
     bs = bson.encode({'md5': m})
     assert (
         bs ==
-        b'\x1f\x00\x00\x00\x05md5\x00\x10\x00\x00\x00\x05$#\x05\x064\x02\xd4p'
-        b'\xb6\xe2-\xa6\x17\xdd\xa85\x00'
+        b'\x1f\x00\x00\x00\x05md5\x00\x10\x00\x00\x00\x05\x80\xbf\x9c\xff\x7f'
+        b'\\\xc3\xf2\x18n\x9d\xc8\xf0\xc3\xd5\xf3\x00'
     )
     obj = bs.decode()
     assert obj == {'md5': m}
