@@ -303,6 +303,12 @@ class TestCollectionRetrieval(object):
         assert cur == self.coll.find()
         assert cur != self.coll.find({'one': 1})
 
+    def test_count_all(self):
+        assert self.coll.count() == 5
+
+    def test_count_with_query(self):
+        assert self.coll.count({'one': 1}) == 1
+
     def test_find_all(self):
         for i, obj in enumerate(self.coll.find()):
             assert dict(obj) == self.objs[i]

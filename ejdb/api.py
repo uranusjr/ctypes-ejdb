@@ -364,7 +364,6 @@ class Collection(object):
         """
         # TODO: Document hints, implement MongoDB-like hinting kwargs.
         tclist_p, count = self._execute(queries, kwargs, flags=c.JBQRYCOUNT)
-        c.tc.listdel(tclist_p)
         return count
 
     def find_one(self, *queries, **kwargs):
