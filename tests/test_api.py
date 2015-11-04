@@ -310,8 +310,11 @@ class TestCollectionRetrieval(object):
         assert self.coll.count({'one': 1}) == 1
 
     def test_find_all(self):
-        for i, obj in enumerate(self.coll.find()):
+        objs = self.coll.find()
+        assert len(objs) == 5
+        for i, obj in enumerate(objs):
             assert dict(obj) == self.objs[i]
+        assert objs == self.objs
 
     def test_find_all_invalid(self):
         with pytest.raises(api.CommandError):
