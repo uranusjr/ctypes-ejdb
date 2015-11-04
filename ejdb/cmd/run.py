@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from __future__ import absolute_import, print_function, unicode_literals
+import platform
 import pprint
 import traceback
 
@@ -28,22 +29,31 @@ else:
 standardpaths.configure(application_name='ctypes-ejdb')
 
 
-def print_exc(chain=True):
+WINDOWS = (platform.system().lower() == 'windows')
+
+
+def print_exc(with_color, chain=True):
     if six.PY3:
         rep = traceback.format_exc(chain=chain)
     else:
         rep = traceback.format_exc()
-    out = highlight(rep, PythonTracebackLexer(), Terminal256Formatter())
+    if with_color:
+        out = highlight(rep, PythonLexer(), Terminal256Formatter())
+    else:
+        out = rep
     print(out)
 
 
-def output(thing):
+def output(thing, with_color):
     rep = pprint.pformat(thing)
-    out = highlight(rep, PythonLexer(), Terminal256Formatter())
+    if with_color:
+        out = highlight(rep, PythonLexer(), Terminal256Formatter())
+    else:
+        out = rep
     print(out)
 
 
-def run_repl_loop(db, data_path):
+def run_repl_loop(db, data_path, with_color):
     history = FileHistory(str(data_path / 'history'))
     glos = {}
     locs = {'db': db}
@@ -75,11 +85,11 @@ def run_repl_loop(db, data_path):
             try:
                 six.exec_(inp, glos, locs)
             except:
-                print_exc(chain=False)
+                print_exc(with_color=with_color, chain=False)
         except SystemExit:
             break
         except:
-            print_exc(chain=False)
+            print_exc(with_color=with_color, chain=False)
 
         if result is None:
             pass
@@ -88,9 +98,9 @@ def run_repl_loop(db, data_path):
         # TODO: Find a better solution for this.
         elif (six.PY3 and hasattr(result, '__next__') or
                 six.PY2 and hasattr(result, 'next')):
-            output([x for x in result])
+            output([x for x in result], with_color=with_color)
         else:
-            output(result)
+            output(result, with_color=with_color)
 
 
 @click.command()
@@ -105,7 +115,8 @@ def run_repl_loop(db, data_path):
     'lib', '--ejdb', type=click.Path(exists=True), default=None,
     help='(Optional) Path to EJDB C library.',
 )
-def main(db, lib):
+@click.option('with_color', '--color/--no-color', default=(not WINDOWS))
+def main(db, lib, with_color):
     """Open a database to manipulate on.
 
     The opened database will be assigned to `db` to be used in the REPL shell.
@@ -118,6 +129,6 @@ def main(db, lib):
         data_path.mkdir(parents=True)
 
     with ejdb.Database(path=db, options=(ejdb.WRITE | ejdb.CREATE)) as db:
-        run_repl_loop(db, data_path)
+        run_repl_loop(db, data_path, with_color)
 
     print('Bye!')
