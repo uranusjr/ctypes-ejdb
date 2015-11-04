@@ -637,6 +637,10 @@ class Database(CObjectWrapper):
     def collections(self):
         return {collection for collection in self}
 
+    @property
+    def collection_names(self):
+        return {collection.name for collection in self}
+
     # def version(self):
     #     """Get format version of the current database.
     #

@@ -174,28 +174,36 @@ class TestDatabase(object):
 
     if six.PY2:
         def test_get_collection(self):
-            c.ejdb.createcoll(self.jb._wrapped, b'msyok', byref(c.EJCOLLOPTS()))
+            c.ejdb.createcoll(
+                self.jb._wrapped, b'msyok', byref(c.EJCOLLOPTS()),
+            )
             assert self.jb.get_collection('msyok')
             with pytest.raises(api.CollectionDoesNotExist) as ctx:
                 self.jb.get_collection('msyokevoli')
             assert str(ctx.value) == "u'msyokevoli'"
 
         def test_getitem(self):
-            c.ejdb.createcoll(self.jb._wrapped, b'msyok', byref(c.EJCOLLOPTS()))
+            c.ejdb.createcoll(
+                self.jb._wrapped, b'msyok', byref(c.EJCOLLOPTS()),
+            )
             assert self.jb.get_collection('msyok')
             with pytest.raises(KeyError) as ctx:
                 self.jb['msyokevoli']
             assert str(ctx.value) == "u'msyokevoli'"
     else:
         def test_get_collection(self):
-            c.ejdb.createcoll(self.jb._wrapped, b'msyok', byref(c.EJCOLLOPTS()))
+            c.ejdb.createcoll(
+                self.jb._wrapped, b'msyok', byref(c.EJCOLLOPTS()),
+            )
             assert self.jb.get_collection('msyok')
             with pytest.raises(api.CollectionDoesNotExist) as ctx:
                 self.jb.get_collection('msyokevoli')
             assert str(ctx.value) == "'msyokevoli'"
 
         def test_getitem(self):
-            c.ejdb.createcoll(self.jb._wrapped, b'msyok', byref(c.EJCOLLOPTS()))
+            c.ejdb.createcoll(
+                self.jb._wrapped, b'msyok', byref(c.EJCOLLOPTS()),
+            )
             assert self.jb.get_collection('msyok')
             with pytest.raises(KeyError) as ctx:
                 self.jb['msyokevoli']
@@ -230,6 +238,16 @@ class TestDatabase(object):
 
         # Dropping a non-existent collection is NOOP.
         self.jb.drop_collection('msyok')
+
+    def test_collections(self):
+        self.jb.create_collection('msyok')
+        colls = self.jb.collections
+        assert len(colls) == 1
+        assert colls.pop().name == 'msyok'
+
+    def test_collection_names(self):
+        coll = self.jb.create_collection('msyok')
+        assert self.jb.collection_names == {coll.name}
 
 
 class TestCollection(object):
