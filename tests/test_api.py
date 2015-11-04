@@ -333,3 +333,46 @@ class TestCollectionRetrieval(object):
         assert dict(objs[2]) == self.objs[2]
         assert dict(objs[3]) == self.objs[0]
         assert dict(objs[4]) == self.objs[1]
+
+
+class TestCollectionDeletion(object):
+
+    def setup(self):
+        self.dirpath = tempfile.mkdtemp()
+        path = os.path.join(self.dirpath, 'msyok')
+        self.jb = api.Database(
+            path=path, options=(api.WRITE | api.TRUNCATE | api.CREATE),
+        )
+        self.jb.create_collection('msyok')
+        self.coll = self.jb['msyok']
+
+        self.objs = [
+            {'order': 4, 'one': 1},
+            {'order': 5, 'two': 2},
+            {'order': 3, 'three': 3},
+            {'order': 0, 'four': 4},
+            {'order': -1, 'five': 5},
+        ]
+        oids = self.coll.insert_many(self.objs)
+        for oid, obj in zip(oids, self.objs):
+            obj['_id'] = oid
+
+    def teardown(self):
+        if self.jb.is_open():
+            self.jb.close()
+        shutil.rmtree(self.dirpath)
+
+    def test_delete_one(self):
+        result_count = self.coll.delete_one({'one': 1})
+        assert result_count == 1
+        assert self.coll.find() == self.objs[1:]
+
+    def test_delete_many(self):
+        result_count = self.coll.delete_many({'one': 1})
+        assert result_count == 1
+        assert self.coll.find() == self.objs[1:]
+
+    def test_delete_many_empty(self):
+        result_count = self.coll.delete_many()
+        assert result_count == 5
+        assert self.coll.find() == []
