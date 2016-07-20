@@ -3,6 +3,19 @@
 History
 =======
 
+0.4.7 (2016-07-20)
+---------------------
+
+* Fix crash when querying with invalid parameter names. This now raises an
+  ``CommandError``.
+* Fix memory leak when calling ``Collection.count``.
+* Add API to query for a list of collection names in a database without needing
+  to construct the collections themselves.
+* Add API to check whether a database is writable.
+* Add flag to disable coloring in CLI, and disable it on Windows by default.
+* ``ejdb.cli`` now has a ``--version`` option.
+
+
 0.4.6 (2015-10-06)
 ---------------------
 
