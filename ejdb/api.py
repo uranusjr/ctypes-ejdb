@@ -149,6 +149,12 @@ class Cursor(tc.ListIterator):
     def __ne__(self, other):
         return not (self == other)
 
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_value, exc_tb):
+        pass
+
     def instantiate(self, value_p):
         # `value_p` from `TCLIST *` is already managed, and we don't want the
         # BSON class to manage it, only the rest of the bson struct. The

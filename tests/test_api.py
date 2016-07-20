@@ -402,3 +402,51 @@ class TestCollectionDeletion(object):
         result_count = self.coll.delete_many()
         assert result_count == 5
         assert self.coll.find() == []
+
+
+class TestCursorContextManagerCompatibility(object):
+
+    def setup(self):
+        self.dirpath = tempfile.mkdtemp()
+        path = os.path.join(self.dirpath, 'msyok')
+        self.jb = api.Database(
+            path=path, options=(api.WRITE | api.TRUNCATE | api.CREATE),
+        )
+        self.objs = [
+            {
+                'name': 'Grenny',
+                'type': 'African Grey',
+                'male': True,
+                'age': 1,
+                'likes': ['green color', 'night', 'toys'],
+                'extra1': None,
+            },
+            {
+                'name': 'Bounty',
+                'type': 'Cockatoo',
+                'male': False,
+                'age': 15,
+                'likes': ['sugar cane'],
+                'extra1': None,
+            },
+        ]
+        self.jb.save('parrots2', *self.objs)
+
+    def teardown(self):
+        if self.jb.is_open():
+            self.jb.close()
+        shutil.rmtree(self.dirpath)
+
+    def test_find(self):
+        query = {'likes': 'toys'}
+        hints = {'$orderby': [('name', 1)]}
+        cur = self.jb.find('parrots2', query, hints=hints)
+        assert len(cur) == 1
+        assert cur[0] == self.objs[0]
+
+    def test_find_with(self):
+        query = {'likes': 'toys'}
+        hints = {'$orderby': [('name', 1)]}
+        with self.jb.find('parrots2', query, hints=hints) as cur:
+            assert len(cur) == 1
+            assert cur[0] == self.objs[0]
