@@ -90,9 +90,16 @@ def _set_index(collection, verb, path, index_type, flags=0):
 
 
 def _get_errmsg(db):
+    """Get the last error message.
+
+    This is used to build a `DatabaseError` exception when we get a failure
+    from the underlying C API.
+    """
     if isinstance(db, CObjectWrapper):
         db = db._wrapped
     errcod = c.ejdb.ecode(db)
+    if errcod == 0:     # For whatever reason there's no error set.
+        return ''
     errmsg = c.ejdb.errmsg(errcod)
     msg = coerce_str(errmsg)
     return msg[0].upper() + msg[1:] + '.'
