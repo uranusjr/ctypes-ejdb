@@ -236,6 +236,9 @@ def init(ejdb_path=None):
     if not ejdb_path:   # pragma: no cover
         raise RuntimeError('EJDB binary not found')
 
+    # Resolve lib path to package root.
+    ejdb_path = os.path.join(get_package_root(), ejdb_path)
+
     # Access to the C library.
     _ = ctypes.cdll.LoadLibrary(ejdb_path)
 
